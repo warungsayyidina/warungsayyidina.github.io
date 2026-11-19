@@ -302,8 +302,13 @@ function viewHome(){
   if (st.berjalan){
     var b=st.berjalan;
     h+='<div class="status run"><b>Sedang jaga shift '+esc(b.shiftNama)+'</b><br><span class="mut">Masuk jam '+titik(b.datang)+'. Shift selesai '+titik(b.selesai)+'.</span></div>'+
-      '<button class="btn no big" onclick="pulang()">ABSEN PULANG</button>'+
+      '<button class="btn no big" onclick="tanyaPulang()">ABSEN PULANG</button>'+
       '<p class="mut" style="margin:10px 2px 0">Lupa absen pulang? Tenang, otomatis tercatat '+titik(b.selesai)+'.'+(b.batasHitung!==b.selesai?' Jam pulang dihitung paling lambat '+titik(b.batasHitung)+'.':'')+'</p>';
+  }
+  if (st.bisaBatal && !st.berjalan){
+    var bb=st.bisaBatal;
+    h+='<div class="status" style="background:#fef3c7"><b>Absen pulang shift '+esc(bb.shiftNama)+' tercatat '+titik(bb.pulang)+'.</b><br><span class="mut">Terpencet? Masih bisa dibatalkan sekitar '+bb.sisa+' menit lagi.</span></div>'+
+      '<button class="btn ghost" onclick="batalPulang()">↩️ Batalkan (terpencet)</button>';
   }
   if (st.terbuka.length){
     if (!S.pilih || !st.terbuka.some(function(x){return x.id===S.pilih;})) S.pilih = pilihDefault(st.terbuka, st.now.jam);
@@ -360,9 +365,22 @@ function masuk(){
     if (S.init.kiosk) setTimeout(selesaiKiosk,2500); else viewHome();
   });
 }
+function tanyaPulang(){
+  var b=S.status.berjalan, now=waktuSekarang();
+  if (b && b.selesai && menitKe(now.jam) < menitKe(b.selesai)){
+    modal('<h3>Yakin pulang sekarang?</h3><p style="margin:6px 0 14px">Shift <b>'+esc(b.shiftNama)+'</b> baru selesai jam <b>'+titik(b.selesai)+'</b>. Sekarang jam '+titik(now.jam)+'.</p>'+
+      '<button class="btn no" onclick="modal();pulang()">Ya, pulang sekarang</button>'+sp()+'<button class="btn ghost" onclick="modal()">Batal, masih jaga</button>');
+    return;
+  }
+  pulang();
+}
+function batalPulang(){
+  api('apiBatalPulang',S.user.nama,S.user.pin).then(function(st){ S.status=st; if(!S.init.kiosk) ls('absensi-status',st); viewHome(); toast('Absen pulang dibatalkan. Status kembali: sedang jaga ✅'); })
+  .catch(function(e){ gagal(e.jaringan?new Error('Butuh internet untuk membatalkan. Coba lagi saat online.'):e); });
+}
 function pulang(){
   var args=[S.user.nama,S.user.pin,hpId()];
-  api.apply(null,['apiPulang'].concat(args)).then(function(st){ S.status=st; if(!S.init.kiosk) ls('absensi-status',st); viewHome(); toast('Absen pulang tercatat. Terima kasih! 🙏'); if(S.init.kiosk) setTimeout(selesaiKiosk,2500); })
+  api.apply(null,['apiPulang'].concat(args)).then(function(st){ S.status=st; if(!S.init.kiosk) ls('absensi-status',st); viewHome(); toast('Absen pulang tercatat. Terima kasih! 🙏'); if(S.init.kiosk){ clearTimeout(S.kt); S.kt=setTimeout(selesaiKiosk,8000); } })
   .catch(function(e){
     if (!e.jaringan) return gagal(e);
     masukAntrian('apiPulang',args,'pulang'+(S.status.berjalan?' '+S.status.berjalan.shiftNama:''));
