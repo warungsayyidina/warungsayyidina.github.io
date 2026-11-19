@@ -201,6 +201,7 @@ function tagEntri(e,admin){
     if (e.hpLain) t+='<span class="tag t-hp">HP lain</span>';
     if (e.tablet) t+='<span class="tag t-run">📍 tablet</span>';
     if (e.sumber==='offline') t+='<span class="tag t-auto">📶 offline</span>';
+    if (e.luarJadwal) t+='<span class="tag t-kh">di luar jadwal</span>';
   }
   return t;
 }
@@ -273,7 +274,7 @@ function viewNama(){
     : '<div class="card"><h3>Siapa kamu?</h3><p class="mut" style="margin:0 0 12px">Pilih namamu. Cukup sekali, berikutnya HP ini akan mengingatmu.</p><div class="grid">';
   S.init.pegawai.forEach(function(n){ h+='<button class="btn name" data-n="'+esc(n)+'" onclick="viewPin(this.dataset.n)">'+esc(n)+'</button>'; });
   if (!S.init.pegawai.length) h+='<p class="mut">Belum ada pegawai. Pemilik bisa menambahkannya di menu Pemilik.</p>';
-  h+='</div></div>'+kartuAntrian()+(S.init.kiosk?kartuPengumuman(S.init.pengumuman):'')+'<div class="foot"><button class="link" onclick="viewAdminLogin()">Masuk sebagai pemilik</button></div>';
+  h+='</div></div>'+kartuAntrian()+(S.init.kiosk?kartuPengumuman(S.init.pengumuman):'')+'<button class="btn ghost" onclick="bantuan()">❓ Bantuan cara pakai</button><div class="foot"><button class="link" onclick="viewAdminLogin()">Masuk sebagai pemilik</button></div>';
   $('view').innerHTML=h;
 }
 function viewPin(nama){
@@ -321,6 +322,11 @@ function viewHome(){
     h+='<div class="status">Belum ada shift yang bisa diabsen sekarang.'+(st.berikut?'<br><span class="mut">Shift '+esc(st.berikut.nama)+' ('+titik(st.berikut.mulai)+') bisa diabsen mulai jam '+titik(st.berikut.buka)+'.</span>':'')+'</div>';
   }
   h+='</div>';
+  (st.permintaanTeman||[]).forEach(function(r){
+    h+='<div class="card" style="border-color:#c4b5fd;background:#f5f3ff"><b>🔁 '+esc(r.dari)+' minta kamu menggantikan</b><div>'+esc(tglPendek(r.tanggal))+' · '+esc(r.shiftNama)+' '+titik(r.mulai)+'–'+titik(r.selesai)+'</div><div class="mut">Alasan: '+esc(r.alasan)+'</div>'+sp(8)+
+      '<div style="display:flex;gap:8px"><button class="btn ok sm" onclick="jawabTukar(\''+r.id+'\',true)">✓ Setuju, saya ganti</button><button class="btn no sm" onclick="jawabTukar(\''+r.id+'\',false)">✕ Tidak bisa</button></div>'+
+      '<div class="mut" style="margin-top:6px">Kalau setuju, permintaan diteruskan ke pemilik untuk disetujui.</div></div>';
+  });
   if (st.hariIni.length){
     h+='<div class="card"><h3>Absenmu hari ini</h3>';
     st.hariIni.forEach(function(e){ h+='<div class="row"><div><b>'+esc(e.shiftNama)+'</b>'+tagEntri(e)+'</div><div>'+jamEntri(e)+'</div></div>'; });
@@ -334,14 +340,15 @@ function viewHome(){
   if (st.ajuan.length){
     h+='<div class="card"><h3>Pengajuanmu</h3>';
     st.ajuan.forEach(function(a){
-      var tg = a.status==='menunggu'?'<span class="tag t-wait">menunggu</span>':a.status==='disetujui'?'<span class="tag t-run">disetujui</span>':'<span class="tag t-no">ditolak</span>';
-      h+='<div class="row"><div>'+(a.jenis==='izin'?'Izin':'Tukar → '+esc(a.pengganti))+tg+'<br><span class="mut">'+esc(tglPendek(a.tanggal))+' · '+esc(a.shiftNama)+'</span></div>'+(a.status==='menunggu'?'<button class="btn sm ghost" onclick="batalAjuan(\''+a.id+'\')">Batalkan</button>':'')+'</div>';
+      var tg = a.status==='menunggu'?'<span class="tag t-wait">menunggu pemilik</span>':a.status==='menunggu-teman'?'<span class="tag t-wait">menunggu '+esc(a.pengganti)+'</span>':a.status==='disetujui'?'<span class="tag t-run">disetujui</span>':a.status==='ditolak-teman'?'<span class="tag t-no">ditolak '+esc(a.pengganti)+'</span>':'<span class="tag t-no">ditolak</span>';
+      h+='<div class="row"><div>'+(a.jenis==='izin'?'Izin':'Tukar → '+esc(a.pengganti))+tg+'<br><span class="mut">'+esc(tglPendek(a.tanggal))+' · '+esc(a.shiftNama)+'</span></div>'+((a.status==='menunggu'||a.status==='menunggu-teman')?'<button class="btn sm ghost" onclick="batalAjuan(\''+a.id+'\')">Batalkan</button>':'')+'</div>';
     });
     h+='</div>';
   }
   h+='<div class="grid"><button class="btn" onclick="viewSusulan()">Lupa absen?<br><small>Absen susulan</small></button><button class="btn" onclick="viewAjuan()">Izin / tukar<br><small>shift</small></button>'+
     '<button class="btn" onclick="jamKerjaku()">Jam kerjaku<br><small>periode ini</small></button><button class="btn" onclick="lihatHariIni()">Siapa jaga<br><small>hari ini</small></button></div>'+
-    sp()+'<button class="btn" onclick="jamLuangku()">🗓️ Jam luangku'+(st.jamLuangDiisi===false?' <span class="badge">belum diisi</span>':'')+'<br><small>shift yang bisa kamu ambil</small></button>';
+    sp()+'<div class="grid"><button class="btn" onclick="jadwalSemua()">📅 Jadwal<br><small>semua orang</small></button><button class="btn" onclick="jamLuangku()">🗓️ Jam luangku'+(st.jamLuangDiisi===false?' <span class="badge">!</span>':'')+'<br><small>shift yang bisa</small></button></div>'+
+    sp()+'<button class="btn ghost" onclick="bantuan()">❓ Bantuan cara pakai</button>';
   h+='<div class="foot"><button class="link" onclick="viewAdminLogin()">Masuk sebagai pemilik</button></div>';
   if (S.init.kiosk) h=h.replace('<div class="foot">','<button class="btn ghost" style="margin-top:12px" onclick="selesaiKiosk()">Selesai</button><p class="mut" style="text-align:center">Kembali ke daftar nama otomatis setelah 30 detik.</p><div class="foot">');
   $('view').innerHTML=h;
@@ -406,6 +413,37 @@ function masukOffline(){ var sh=shiftsUntuk(waktuSekarang().tanggal).filter(func
 function pulangOffline(){ masukAntrian('apiPulang',[S.user.nama,S.user.pin,hpId()],'pulang'); setTimeout(selesaiKiosk,2500); }
 
 // jam luang pegawai
+function jadwalSemua(){
+  var mulai=(S.status&&S.status.now?S.status.now.tanggal:waktuSekarang().tanggal);
+  api('apiJadwal',mulai).then(function(j){
+    var me=S.user?S.user.nama.toLowerCase():'';
+    var h='<h3>📅 Jadwal 7 hari ke depan</h3><p class="mut" style="margin:0 0 6px">Namamu ditebalkan. Butuh tukar? Pakai tombol Izin / tukar.</p>';
+    j.hari.forEach(function(d){
+      h+='<div class="card" style="margin:8px 0;padding:10px 12px"><b>'+esc(tglPendek(d.tanggal))+'</b>';
+      d.slot.forEach(function(s){
+        var isi=s.libur?'<span class="tag t-lib">libur</span>':(s.nama.length?s.nama.map(function(n){return n.toLowerCase()===me?'<b style="color:var(--pri2)">'+esc(n)+'</b>':esc(n);}).join(', '):'<span class="mut">–</span>');
+        h+='<div class="row" style="padding:5px 0"><div>'+esc(s.shiftNama)+' <span class="mut">'+titik(s.mulai)+'</span></div><div style="text-align:right">'+isi+'</div></div>';
+      });
+      h+='</div>';
+    });
+    modal(h+'<button class="btn ghost" onclick="modal()">Tutup</button>');
+  }).catch(gagal);
+}
+function bantuan(){
+  var q=[
+    ['Absen masuk','Saat datang, buka aplikasi lalu tekan ABSEN MASUK. Tombol muncul mulai 1 jam sebelum shift.'],
+    ['Absen pulang','Saat pulang, tekan ABSEN PULANG. Kalau lupa, otomatis tercatat jam akhir shift. Kalau terpencet, ada tombol Batalkan selama 5 menit.'],
+    ['Lupa absen masuk','Tekan "Lupa absen? Absen susulan", isi tanggal, shift, jam, dan alasan. Nanti disetujui pemilik.'],
+    ['Izin tidak masuk','Tekan "Izin / tukar shift" → Izin tidak masuk → isi alasan. Tunggu persetujuan pemilik.'],
+    ['Minta digantikan teman','Tekan "Izin / tukar shift" → Digantikan teman → pilih teman. Temanmu menekan Setuju dulu, lalu pemilik menyetujui. Jadwal berubah otomatis.'],
+    ['Jam luang','Tekan "Jam luangku", centang shift yang bisa kamu ambil. Perbarui setiap jadwal kuliah berubah. Ini hanya info untuk pemilik, tidak langsung mengubah jadwal.'],
+    ['Notifikasi','Pasang aplikasi ke layar utama (Chrome: titik tiga → Tambahkan ke layar utama; iPhone: Safari → Bagikan → Tambahkan ke Layar Utama), buka dari ikon itu, lalu tekan Aktifkan notifikasi → Izinkan.'],
+    ['Internet putus','Tetap tekan tombol absen. Absen disimpan di HP dan dikirim otomatis saat online, dengan jam saat tombol ditekan.'],
+    ['Lihat jam kerja','Tekan "Jam kerjaku" untuk melihat total jam dan jumlah shift di periode gajian berjalan.'],
+    ['Ganti HP','Pasang aplikasi di HP baru seperti biasa, lalu kabari pemilik supaya HP lamamu direset.']
+  ];
+  modal('<h3>❓ Cara pakai aplikasi absensi</h3>'+q.map(function(x){return '<details style="border-top:1px dashed var(--line);padding:6px 0"><summary>'+esc(x[0])+'</summary><div class="mut" style="padding:4px 0 2px">'+esc(x[1])+'</div></details>';}).join('')+sp(10)+'<button class="btn ghost" onclick="modal()">Tutup</button>');
+}
 function jamLuangku(){
   api('apiJamLuangSaya',S.user.nama,S.user.pin).then(function(r){
     S._jl=r;
@@ -455,7 +493,7 @@ function viewAjuan(tgl,shift){
   modal('<h3>Izin / tukar shift</h3><p class="mut" style="margin:0">Pengajuan dikirim ke pemilik. Kalau disetujui, jadwal otomatis berubah.</p>'+
     '<div class="chips" style="margin-top:10px"><button id="jIzin" class="chip on" onclick="pilihJenis(\'izin\')">Izin tidak masuk</button><button id="jTukar" class="chip" onclick="pilihJenis(\'tukar\')">Digantikan teman</button></div>'+
     '<div class="grid"><div><label>Tanggal</label><input id="aTgl" type="date" min="'+now.tanggal+'" value="'+tgl+'" onchange="$(\'aShift\').innerHTML=opsiShift(this.value)"></div><div><label>Shift</label><select id="aShift">'+opsiShift(tgl,shift)+'</select></div></div>'+
-    '<div id="aPengWrap" style="display:none"><label>Digantikan oleh</label><select id="aPeng"><option value="">— pilih teman —</option>'+teman+'</select><div class="mut" style="margin-top:4px">Pastikan temanmu sudah setuju dulu ya.</div></div>'+
+    '<div id="aPengWrap" style="display:none"><label>Digantikan oleh</label><select id="aPeng"><option value="">— pilih teman —</option>'+teman+'</select><div class="mut" style="margin-top:4px">Temanmu akan dapat notifikasi dan harus menekan Setuju dulu, baru diteruskan ke pemilik.</div></div>'+
     '<label>Alasan singkat</label><input id="aAl" placeholder="mis. ada kuliah pengganti">'+
     sp(14)+'<button class="btn pri" onclick="kirimAjuan()">Kirim pengajuan</button>'+sp()+'<button class="btn ghost" onclick="modal()">Batal</button>');
 }
@@ -464,6 +502,7 @@ function kirimAjuan(){
   var d={jenis:S._jenis,tanggal:$('aTgl').value,shift:$('aShift').value,pengganti:$('aPeng').value,alasan:$('aAl').value};
   api('apiAjukan',S.user.nama,S.user.pin,d).then(function(r){ modal(); toast(r.pesan); muatStatus(true); }).catch(gagal);
 }
+function jawabTukar(id,y){ api('apiJawabTukar',S.user.nama,S.user.pin,id,y).then(function(st){ S.status=st; viewHome(); toast(y?'Terima kasih! Diteruskan ke pemilik 👍':'Permintaan ditolak'); }).catch(gagal); }
 function batalAjuan(id){ api('apiBatalAjuan',S.user.nama,S.user.pin,id).then(function(){ toast('Pengajuan dibatalkan'); muatStatus(true); }).catch(gagal); }
 
 function jamKerjaku(){
@@ -530,7 +569,7 @@ function aHari(){
       if (!d.kunci) h+='<div style="margin-top:6px"><button class="btn sm ghost" onclick="editAbsen(null,\''+s.id+'\')">+ Tambah manual</button></div>';
       h+='</div>';
     });
-    h+='<p class="mut">Ketuk nama untuk mengubah. Label: <span class="tag t-auto">otomatis</span> lupa absen pulang · <span class="tag t-ed">diubah</span> sudah diubah pemilik · <span class="tag t-hp">HP lain</span> absen dari HP yang berbeda dari biasanya · <span class="tag t-run">📍 tablet</span> absen dari tablet warung.</p>';
+    h+='<p class="mut">Ketuk nama untuk mengubah. Label: <span class="tag t-auto">otomatis</span> lupa absen pulang · <span class="tag t-ed">diubah</span> sudah diubah pemilik · <span class="tag t-hp">HP lain</span> absen dari HP yang berbeda dari biasanya · <span class="tag t-run">📍 tablet</span> absen dari tablet warung · <span class="tag t-kh">di luar jadwal</span> absen di shift yang bukan jadwalnya.</p>';
     $('aview').innerHTML=h;
   }).catch(gagal);
 }
@@ -610,8 +649,8 @@ function tampilRekap(r){
   var h='<div class="card"><h3>Jam kerja '+esc(tglPendek(r.dari))+' – '+esc(tglPendek(r.sampai))+(r.tutup?' 🔒':'')+'</h3>';
   if (r.pending) h+='<div class="status" style="margin-top:0">⚠️ Ada '+r.pending+' absen susulan yang belum diputuskan di periode ini (belum dihitung).</div>';
   h+='<table><tr><th>Nama</th><th class="r">Shift</th><th class="r">Jam kerja</th></tr>';
-  r.ringkas.forEach(function(x){ var k=[]; if(x.otomatis) k.push(x.otomatis+'× lupa absen pulang'); if(x.hpLain) k.push(x.hpLain+'× HP lain');
-    h+='<tr><td><b>'+esc(x.nama)+'</b>'+(k.length?'<div class="mut" style="font-size:11.5px">'+k.join(' · ')+'</div>':'')+'</td><td class="r">'+x.shift+'</td><td class="r"><b>'+esc(x.durasi)+'</b><div class="mut" style="font-size:11.5px">'+x.jamDesimal+' jam</div></td></tr>'; });
+  r.ringkas.forEach(function(x){ var k=[]; if(x.otomatis) k.push(x.otomatis+'× lupa absen pulang'); if(x.hpLain) k.push(x.hpLain+'× HP lain'); if(x.luarJadwal) k.push(x.luarJadwal+'× di luar jadwal');
+    h+='<tr><td><b>'+esc(x.nama)+'</b> <button class="btn sm ghost" style="padding:3px 7px;font-size:12px" data-n="'+esc(x.nama)+'" onclick="rincianPegawai(this.dataset.n)">📤 rincian</button>'+(k.length?'<div class="mut" style="font-size:11.5px">'+k.join(' · ')+'</div>':'')+'</td><td class="r">'+x.shift+'</td><td class="r"><b>'+esc(x.durasi)+'</b><div class="mut" style="font-size:11.5px">'+x.jamDesimal+' jam</div></td></tr>'; });
   if (!r.ringkas.length) h+='<tr><td colspan="3" class="mut">Belum ada data.</td></tr>';
   h+='</table>'+sp(12)+'<div class="grid"><button class="btn" onclick="salinRekap()">Salin rekap</button><button class="btn" onclick="simpanRekapSheet()">Simpan ke Sheet</button></div>';
   if (r.tutup) h+='<p class="mut" style="margin:10px 0 0">🔒 Periode ini sudah tutup buku ('+esc(r.tutup.ditutup)+'). Absen di dalamnya tidak bisa diubah.</p>';
@@ -627,6 +666,15 @@ function tampilRekap(r){
   r.detail.forEach(function(d){ h+='<div class="row"><div>'+esc(tglPendek(d.tanggal))+' · '+esc(d.shiftNama)+'<br><b>'+esc(d.nama)+'</b>'+tagEntri(d,true)+'</div><div style="text-align:right">'+jamEntri(d)+'<br><span class="mut">'+durasi(d.menit)+'</span></div></div>'; });
   h+='</details></div>';
   $('rOut').innerHTML=h;
+}
+function rincianPegawai(nama){
+  var r=S.adm.rekap, rows=r.detail.filter(function(d){return d.nama===nama;}), x=r.ringkas.filter(function(y){return y.nama===nama;})[0];
+  var L=['*Rincian Jam Kerja — '+nama+'*', S.adm.data.warung, 'Periode: '+tglPendek(r.dari)+' s.d. '+tglPendek(r.sampai), ''];
+  rows.forEach(function(d,i){ L.push((i+1)+'. '+tglPendek(d.tanggal)+' · '+d.shiftNama+' · '+titik(d.datang)+'–'+(d.berjalan?'…':titik(d.pulangEff))+' · '+durasi(d.menit)+(d.otomatis?' (lupa absen pulang)':'')); });
+  L.push('', '*Total: '+x.shift+' shift · '+x.durasi+' ('+String(x.jamDesimal).replace('.',',')+' jam)*');
+  if (x.otomatis) L.push('Catatan: '+x.otomatis+'× lupa absen pulang, dihitung sampai jam akhir shift.');
+  if (r.pending) L.push('Absen susulan yang belum disetujui belum dihitung.');
+  tampilTeks('Rincian '+nama, L.join('\n'));
 }
 function salinRekap(){
   var r=S.adm.rekap, L=['*Rekap Jam Kerja '+S.adm.data.warung+'*', tglPendek(r.dari)+' s.d. '+tglPendek(r.sampai),''];
