@@ -195,6 +195,7 @@ function tagEntri(e,admin){
     if (e.sumber==='susulan' && e.status==='ok') t+='<span class="tag t-wait">susulan</span>';
     if (e.diubah) t+='<span class="tag t-ed">diubah</span>';
     if (e.hpLain) t+='<span class="tag t-hp">HP lain</span>';
+    if (e.tablet) t+='<span class="tag t-run">📍 tablet</span>';
   }
   return t;
 }
@@ -209,8 +210,9 @@ setInterval(tick,10000); tick();
 // ---------- mulai ----------
 function mulai(){
   if (window.DEMO) $('demoBar').innerHTML='<div class="demo"><b>Mode demo</b>: data hanya tersimpan di HP ini. PIN pegawai: Diza 1111, Bintang 2222, Levi 3333, Aldiva 4444, Shinta 5555. PIN pemilik: 1234. <button class="link" style="color:#fde68a" onclick="DEMO.reset();ls(\'absensi-user\',null);ls(\'absensi-admin\',null);location.reload()">reset demo</button></div>';
-  api('apiInit').then(function(d){
+  api('apiInit',hpId()).then(function(d){
     S.init=d; $('hWarung').textContent=d.warung; $('hTgl').textContent=d.label.hari+', '+d.label.tanggal;
+    if (d.kiosk){ S.user=null; ls('absensi-user',null); ls('absensi-admin',null); return viewNama(); }
     S.user = ls('absensi-user');
     if (ls('absensi-admin')) { S.adm.pin=ls('absensi-admin'); return bukaAdmin(); }
     if (S.user) muatStatus(); else viewNama();
@@ -223,7 +225,8 @@ setInterval(function(){ if(!document.hidden) segarkan(); },60000);
 // ---------- PEGAWAI ----------
 function viewNama(){
   S.mode='pegawai';
-  var h='<div class="card"><h3>Siapa kamu?</h3><p class="mut" style="margin:0 0 12px">Pilih namamu. Cukup sekali, berikutnya HP ini akan mengingatmu.</p><div class="grid">';
+  var h=S.init.kiosk ? '<div class="card"><h3>📍 Absen di warung</h3><p class="mut" style="margin:0 0 12px">Ketuk namamu, masukkan PIN, lalu absen.</p><div class="grid">'
+    : '<div class="card"><h3>Siapa kamu?</h3><p class="mut" style="margin:0 0 12px">Pilih namamu. Cukup sekali, berikutnya HP ini akan mengingatmu.</p><div class="grid">';
   S.init.pegawai.forEach(function(n){ h+='<button class="btn name" data-n="'+esc(n)+'" onclick="viewPin(this.dataset.n)">'+esc(n)+'</button>'; });
   if (!S.init.pegawai.length) h+='<p class="mut">Belum ada pegawai. Pemilik bisa menambahkannya di menu Pemilik.</p>';
   h+='</div></div><div class="foot"><button class="link" onclick="viewAdminLogin()">Masuk sebagai pemilik</button></div>';
@@ -237,13 +240,16 @@ function viewPin(nama){
 }
 function cekPin(){
   var pin=$('pin').value.trim();
-  api('apiStatusSaya',S._nama,pin).then(function(st){ S.user={nama:st.nama,pin:pin}; ls('absensi-user',S.user); S.status=st; viewHome(); }).catch(gagal);
+  api('apiStatusSaya',S._nama,pin).then(function(st){ S.user={nama:st.nama,pin:pin}; if(!S.init.kiosk) ls('absensi-user',S.user); S.status=st; viewHome(); }).catch(gagal);
 }
 function muatStatus(diam){
   api('apiStatusSaya',S.user.nama,S.user.pin).then(function(st){ S.status=st; viewHome(); })
   .catch(function(e){ if(!diam) gagal(e); if(/PIN|Nama/.test(e.message||'')){ ls('absensi-user',null); S.user=null; viewNama(); } });
 }
-function keluarPegawai(){ notifLogout(); ls('absensi-user',null); S.user=null; S.status=null; viewNama(); }
+function selesaiKiosk(){ clearTimeout(S.kt); S.user=null; S.status=null; modal(); viewNama(); }
+function aturTimerKiosk(){ clearTimeout(S.kt); if (S.init && S.init.kiosk && S.user) S.kt=setTimeout(selesaiKiosk,30000); }
+document.addEventListener('click',function(){ if (S.init && S.init.kiosk && S.user && S.mode==='pegawai') aturTimerKiosk(); },true);
+function keluarPegawai(){ if (S.init.kiosk) return selesaiKiosk(); notifLogout(); ls('absensi-user',null); S.user=null; S.status=null; viewNama(); }
 
 function viewHome(){
   S.mode='pegawai';
@@ -286,16 +292,17 @@ function viewHome(){
   h+='<div class="grid"><button class="btn" onclick="viewSusulan()">Lupa absen?<br><small>Absen susulan</small></button><button class="btn" onclick="viewAjuan()">Izin / tukar<br><small>shift</small></button>'+
     '<button class="btn" onclick="jamKerjaku()">Jam kerjaku<br><small>periode ini</small></button><button class="btn" onclick="lihatHariIni()">Siapa jaga<br><small>hari ini</small></button></div>';
   h+='<div class="foot"><button class="link" onclick="viewAdminLogin()">Masuk sebagai pemilik</button></div>';
+  if (S.init.kiosk) h=h.replace('<div class="foot">','<button class="btn ghost" style="margin-top:12px" onclick="selesaiKiosk()">Selesai</button><p class="mut" style="text-align:center">Kembali ke daftar nama otomatis setelah 30 detik.</p><div class="foot">');
   $('view').innerHTML=h;
-  kartuNotif('notifBox', st.pegawaiId);
+  if (S.init.kiosk) aturTimerKiosk(); else kartuNotif('notifBox', st.pegawaiId);
 }
 function pilihDefault(list, jam){
   var t=menitKe(jam);
   var dalam=list.filter(function(x){ return t>=menitKe(x.mulai)-60 && t<=menitKe(x.selesai); });
   return (dalam[0]||list[0]).id;
 }
-function masuk(){ api('apiMasuk',S.user.nama,S.user.pin,S.pilih,hpId()).then(function(st){ S.status=st; viewHome(); toast('Absen masuk tercatat jam '+titik(st.now.jam)+' ✅'); }).catch(gagal); }
-function pulang(){ api('apiPulang',S.user.nama,S.user.pin,hpId()).then(function(st){ S.status=st; viewHome(); toast('Absen pulang tercatat. Terima kasih! 🙏'); }).catch(gagal); }
+function masuk(){ api('apiMasuk',S.user.nama,S.user.pin,S.pilih,hpId()).then(function(st){ S.status=st; viewHome(); toast('Absen masuk tercatat jam '+titik(st.now.jam)+' ✅'); if(S.init.kiosk) setTimeout(selesaiKiosk,2500); }).catch(gagal); }
+function pulang(){ api('apiPulang',S.user.nama,S.user.pin,hpId()).then(function(st){ S.status=st; viewHome(); toast('Absen pulang tercatat. Terima kasih! 🙏'); if(S.init.kiosk) setTimeout(selesaiKiosk,2500); }).catch(gagal); }
 
 function lihatHariIni(){
   api('apiHariIni','').then(function(d){
@@ -365,10 +372,10 @@ function viewAdminLogin(){
     sp(12)+'<button class="btn pri" onclick="loginAdmin()">Masuk</button>'+sp()+'<button class="btn ghost" onclick="kembaliPegawai()">Kembali</button></div>';
   setTimeout(function(){ $('apin').focus(); },50);
 }
-function kembaliPegawai(){ S.mode='pegawai'; if (S.user) muatStatus(); else viewNama(); }
+function kembaliPegawai(){ S.mode='pegawai'; if (S.init.kiosk){ S.user=null; return viewNama(); } if (S.user) muatStatus(); else viewNama(); }
 function loginAdmin(){ S.adm.pin=$('apin').value.trim(); bukaAdmin(); }
 function bukaAdmin(){
-  api('apiAdminData',S.adm.pin).then(function(d){ S.mode='admin'; S.adm.data=d; ls('absensi-admin',S.adm.pin); renderAdmin(); })
+  api('apiAdminData',S.adm.pin).then(function(d){ S.mode='admin'; S.adm.data=d; if(!S.init.kiosk) ls('absensi-admin',S.adm.pin); renderAdmin(); })
   .catch(function(e){ ls('absensi-admin',null); gagal(e); viewAdminLogin(); });
 }
 function keluarAdmin(){ ls('absensi-admin',null);  S.adm={tab:'hari'}; kembaliPegawai(); }
@@ -402,7 +409,7 @@ function aHari(){
       if (!d.kunci) h+='<div style="margin-top:6px"><button class="btn sm ghost" onclick="editAbsen(null,\''+s.id+'\')">+ Tambah manual</button></div>';
       h+='</div>';
     });
-    h+='<p class="mut">Ketuk nama untuk mengubah. Label: <span class="tag t-auto">otomatis</span> lupa absen pulang · <span class="tag t-ed">diubah</span> sudah diubah pemilik · <span class="tag t-hp">HP lain</span> absen dari HP yang berbeda dari biasanya.</p>';
+    h+='<p class="mut">Ketuk nama untuk mengubah. Label: <span class="tag t-auto">otomatis</span> lupa absen pulang · <span class="tag t-ed">diubah</span> sudah diubah pemilik · <span class="tag t-hp">HP lain</span> absen dari HP yang berbeda dari biasanya · <span class="tag t-run">📍 tablet</span> absen dari tablet warung.</p>';
     $('aview').innerHTML=h;
   }).catch(gagal);
 }
@@ -565,13 +572,13 @@ function formKhusus(t){
 }
 function simpanKhusus(t){
   var d={tanggal:t,nama:$('kNm').value,mulai:$('kM').value,selesai:$('kS').value,tambahMasuk:$('kTM').value,tambahPulang:$('kTP').value};
-  simpanJadwal(true).then(function(){ return api('apiAdminTambahShiftKhusus',S.adm.pin,d); }).then(function(){ modal(); toast('Shift khusus ditambahkan ✅'); return api('apiInit'); }).then(function(i){ S.init=i; aJadwal(); }).catch(gagal);
+  simpanJadwal(true).then(function(){ return api('apiAdminTambahShiftKhusus',S.adm.pin,d); }).then(function(){ modal(); toast('Shift khusus ditambahkan ✅'); return api('apiInit',hpId()); }).then(function(i){ S.init=i; aJadwal(); }).catch(gagal);
 }
 function hapusKhusus(ev,id){
   ev.preventDefault();
   if (S._hapusK!==id){ S._hapusK=id; toast('Ketuk "hapus" sekali lagi untuk menghapus shift khusus ini.'); return; }
   S._hapusK=null;
-  api('apiAdminHapusShiftKhusus',S.adm.pin,id).then(function(){ toast('Shift khusus dihapus'); return api('apiInit'); }).then(function(i){ S.init=i; aJadwal(); }).catch(gagal);
+  api('apiAdminHapusShiftKhusus',S.adm.pin,id).then(function(){ toast('Shift khusus dihapus'); return api('apiInit',hpId()); }).then(function(i){ S.init=i; aJadwal(); }).catch(gagal);
 }
 
 // --- Pegawai ---
@@ -591,7 +598,7 @@ function renderPegawai(){
 }
 function tambahPeg(){ var pin=String(Math.floor(1000+Math.random()*9000)); S.adm.peg.push({id:'',nama:'',pin:pin,aktif:true}); renderPegawai(); }
 function simpanPeg(){
-  api('apiAdminSimpanPegawai',S.adm.pin,S.adm.peg).then(function(d){ S.adm.data=d; return api('apiInit'); }).then(function(i){ S.init=i; toast('Daftar pegawai tersimpan ✅'); renderAdmin(); }).catch(gagal);
+  api('apiAdminSimpanPegawai',S.adm.pin,S.adm.peg).then(function(d){ S.adm.data=d; return api('apiInit',hpId()); }).then(function(i){ S.init=i; toast('Daftar pegawai tersimpan ✅'); renderAdmin(); }).catch(gagal);
 }
 
 // --- Riwayat ---
@@ -622,6 +629,9 @@ function aAtur(){
     '<label style="display:flex;align-items:center;gap:8px"><input id="nPul" class="sw" type="checkbox"'+(n.pulang?' checked':'')+'> Ingatkan absen pulang saat shift selesai</label>'+
     '<div class="mut">Isi 0 untuk mematikan. Pemilik juga dapat notifikasi saat ada shift kosong, absen susulan, atau pengajuan izin/tukar.</div>'+
     '<div class="hr"></div><b>Notifikasi pemilik di HP ini</b><div id="notifAdm" class="mut" style="margin-top:6px">Memeriksa…</div></div>';
+  h+='<div class="card"><h3>📍 Tablet / perangkat warung</h3><p class="mut" style="margin:0 0 8px">Perangkat warung dipakai bergantian untuk absen: tidak dianggap "HP lain", tidak menyimpan login pegawai, dan absennya diberi label 📍 tablet. Terdaftar: '+(d.jumlahPerangkatWarung||0)+' perangkat.</p>'+
+    (S.init.kiosk ? '<div class="status" style="margin-top:0">✅ Perangkat ini adalah tablet warung.</div><button class="btn ghost" onclick="aturTablet(false)">Lepas status tablet warung</button>'
+      : '<button class="btn" onclick="aturTablet(true)">Jadikan perangkat ini tablet warung</button><div class="mut" style="margin-top:6px">Tekan tombol ini dari tablet warung, bukan dari HP Anda.</div>')+'</div>';
   h+='<div class="card"><h3>PIN pemilik</h3><label>PIN baru (kosongkan jika tidak diganti)</label><input id="sPin" type="password" inputmode="numeric" maxlength="8"></div>';
   h+='<button class="btn pri" onclick="simpanAtur()">Simpan pengaturan</button>';
   $('aview').innerHTML=h;
@@ -634,13 +644,21 @@ function aAtur(){
     else { notifLogin('pemilik'); el.innerHTML='🔔 Aktif. <button class="btn sm ghost" onclick="tesNotif()">Kirim tes</button>'; }
   });
 }
+function aturTablet(y){
+  api('apiAdminPerangkatWarung',S.adm.pin,hpId(),y).then(function(r){
+    S.init.kiosk=r.kiosk;
+    if (r.kiosk){ ls('absensi-user',null); ls('absensi-admin',null); notifLogout(); toast('Perangkat ini sekarang tablet warung ✅ Keluar dari mode pemilik untuk mulai dipakai.'); }
+    else toast('Status tablet warung dilepas.');
+    return refreshAdminData();
+  }).then(renderAdmin).catch(gagal);
+}
 function tesNotif(){ api('apiAdminTesNotif',S.adm.pin).then(function(r){ toast(r.pesan,!r.ok); }).catch(gagal); }
 function simpanAtur(){
   var d=S.adm.data, sh=d.shifts.map(function(s,i){ return {id:s.id,nama:$('shN'+i).value,mulai:$('shM'+i).value,selesai:$('shS'+i).value,tambahMasuk:$('shTM'+i).value,tambahPulang:$('shTP'+i).value}; });
   var baru=$('sPin').value.trim();
   api('apiAdminSimpanPengaturan',S.adm.pin,{namaWarung:$('sNama').value,tandaKosong:$('sTK').value,shifts:sh,pinAdminBaru:baru,notif:{menitIngat:$('nIng').value,menitBelumMasuk:$('nBel').value,pulang:$('nPul').checked}}).then(function(x){
     if (baru){ S.adm.pin=baru; ls('absensi-admin',baru); }
-    S.adm.data=x; return api('apiInit');
+    S.adm.data=x; return api('apiInit',hpId());
   }).then(function(i){ S.init=i; $('hWarung').textContent=i.warung; toast('Pengaturan tersimpan ✅'); renderAdmin(); }).catch(gagal);
 }
 
