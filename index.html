@@ -179,7 +179,7 @@ function kartuNotif(el, id){
 }
 
 function toast(msg,err){ var b=$('toastBox'); b.innerHTML='<div class="toast'+(err?' err':'')+'">'+esc(msg)+'</div>'; clearTimeout(toast.t); toast.t=setTimeout(function(){b.innerHTML='';}, err?4500:2600); }
-function gagal(e){ toast((e&&e.message)||String(e),true); }
+function gagal(e){ var m=(e&&e.message)||String(e); if (/Fungsi tidak dikenal|is not a function/i.test(m)) { m='Aplikasi perlu diperbarui. Memuat ulang…'; setTimeout(function(){ location.reload(); },1500); } toast(m,true); }
 function modal(html){ $('modalBox').innerHTML = html ? '<div class="modal" onclick="if(event.target===this)modal()"><div class="sheet">'+html+'</div></div>' : ''; }
 function addDays(s,n){ var p=s.split('-'); var d=new Date(+p[0],+p[1]-1,+p[2]+n); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 var HARI=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'], BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -256,6 +256,25 @@ setInterval(kirimAntrian,30000);
 function kartuPengumuman(list){
   return (list||[]).map(function(p){ return '<div class="card pengumuman"><b>📢 '+esc(p.judul)+'</b><div>'+esc(p.isi)+'</div><div class="mut" style="font-size:12px">'+esc(p.waktu)+'</div></div>'; }).join('');
 }
+
+// ---------- pembaruan otomatis (versi GitHub Pages) ----------
+var VERSI_APP = '20261119212807';
+function cekVersi(){
+  if (!window.KONFIG || VERSI_APP.indexOf('__')===0) return;
+  fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
+    if (!j || !j.v || j.v===VERSI_APP) return;
+    var sibuk = $('modalBox').innerHTML || (S.init && S.init.kiosk && S.user);
+    if ((S.init && S.init.kiosk && !S.user && !$('modalBox').innerHTML) || document.hidden) { location.reload(); return; }
+    if (!sibuk && !$('verBar')) {
+      var d=document.createElement('div'); d.id='verBar';
+      d.innerHTML='<div class="card" style="position:fixed;left:12px;right:12px;bottom:14px;z-index:45;max-width:496px;margin:0 auto;background:#1c1917;color:#fff;display:flex;gap:10px;align-items:center;justify-content:space-between"><span>✨ Versi baru aplikasi tersedia</span><button class="btn sm pri" onclick="location.reload()">Perbarui</button></div>';
+      document.body.appendChild(d);
+    }
+  }).catch(function(){});
+}
+setInterval(cekVersi, 5*60*1000);
+document.addEventListener('visibilitychange',function(){ if(!document.hidden) cekVersi(); });
+setTimeout(cekVersi, 8000);
 
 // ---------- mulai ----------
 function mulai(){
