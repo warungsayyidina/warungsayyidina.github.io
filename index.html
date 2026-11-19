@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Absensi Pegawai</title>
+<style>
+:root{--bg:#fff7ed;--card:#fff;--ink:#1c1917;--mut:#78716c;--line:#f1e4d6;--pri:#ea580c;--pri2:#c2410c;--ok:#16a34a;--no:#dc2626;--warn:#d97706;--soft:#ffedd5}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:520px;margin:0 auto;padding:14px 14px 90px}
+header{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 14px}
+header h1{font-size:18px;margin:0;letter-spacing:-.2px}
+header .sub{font-size:12.5px;color:var(--mut)}
+.clock{font-variant-numeric:tabular-nums;font-weight:700;font-size:22px;color:var(--pri2)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(120,60,0,.04)}
+.card h3{margin:0 0 8px;font-size:15px}
+.mut{color:var(--mut);font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:12px 14px;font:inherit;font-weight:600;cursor:pointer;background:var(--soft);color:var(--pri2)}
+.btn:active{transform:scale(.98)}
+.btn.pri{background:var(--pri);color:#fff}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.no{background:var(--no);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.sm{display:inline-block;width:auto;padding:7px 11px;font-size:13px;border-radius:9px}
+.btn[disabled]{opacity:.45}
+.big{font-size:22px;padding:22px 14px;border-radius:18px;letter-spacing:.5px}
+.name{font-size:17px;padding:18px 10px;background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer}
+.chip.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-top:1px dashed var(--line)}
+.row:first-of-type{border-top:0}
+.row.tap{cursor:pointer}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:6px;padding:2px 7px;margin-left:4px}
+.t-auto{background:#fef3c7;color:#92400e}.t-run{background:#dcfce7;color:#166534}.t-wait{background:#e0e7ff;color:#3730a3}.t-no{background:#fee2e2;color:#991b1b}
+label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:10px 11px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pri)}
+.pin{font-size:28px;text-align:center;letter-spacing:12px}
+.tabs{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;padding:8px 0 10px;background:var(--bg);margin-bottom:4px}
+.tabs button{flex:0 0 auto;border:0;background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 13px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.badge{background:var(--no);color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:4px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 4px;border-bottom:1px solid var(--line)}
+th{font-size:12px;color:var(--mut);font-weight:600}
+td.r,th.r{text-align:right}
+.nav{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.nav .t{flex:1;text-align:center;font-weight:700}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:14px;max-width:90%;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.toast.err{background:var(--no)}
+.modal{position:fixed;inset:0;background:rgba(28,25,23,.45);display:flex;align-items:flex-end;justify-content:center;z-index:40}
+.sheet{background:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:16px 16px 22px}
+.sheet h3{margin:0 0 6px}
+pre.wa{white-space:pre-wrap;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px;font:13px/1.45 ui-monospace,Menlo,monospace;max-height:45vh;overflow:auto}
+.busy{position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--pri),#fdba74,var(--pri));background-size:200% 100%;animation:b 1s linear infinite;z-index:60}
+@keyframes b{to{background-position:-200% 0}}
+.demo{background:#1c1917;color:#fde68a;font-size:12.5px;padding:8px 12px;border-radius:10px;margin-bottom:12px}
+.demo b{color:#fff}
+.foot{text-align:center;margin-top:18px}
+.link{background:none;border:0;color:var(--mut);text-decoration:underline;font:inherit;font-size:13px;cursor:pointer}
+.hello{font-size:20px;font-weight:700;margin:0}
+.status{border-radius:14px;padding:12px;margin:10px 0 12px;background:var(--soft)}
+.status.run{background:#dcfce7}
+.hr{height:1px;background:var(--line);margin:12px 0}
+details summary{cursor:pointer;font-weight:600;padding:4px 0}
+.pegrow{display:grid;grid-template-columns:1fr 90px 52px;gap:6px;align-items:center;margin-bottom:6px}
+.shrow{display:grid;grid-template-columns:1fr 92px 92px;gap:6px;margin-bottom:6px}
+.jrow{display:grid;grid-template-columns:62px 1fr 1fr;gap:6px;align-items:center;margin-bottom:6px;font-size:13px;font-weight:600}
+.jrow select{padding:8px 6px;font-size:13.5px}
+.sw{width:22px;height:22px;accent-color:var(--pri)}
+.alarm{background:#fee2e2;border:1px solid #fecaca;color:#991b1b;border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:14px}
+.t-hp{background:#fce7f3;color:#9d174d}.t-ed{background:#e0f2fe;color:#075985}.t-lib{background:#e7e5e4;color:#44403c}.t-kh{background:#ede9fe;color:#5b21b6}
+.card.kosong{border-color:#fca5a5;background:#fff5f5}.card.kurang{border-color:#fcd34d}.card.libur{opacity:.7}
+.jrow{grid-template-columns:64px 1fr 1fr 40px !important}
+.jrow .lb{display:flex;flex-direction:column;align-items:center;font-size:10.5px;color:var(--mut);font-weight:600}
+.shcard{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.loge{padding:9px 0;border-top:1px dashed var(--line);font-size:13.5px}
+.loge b{font-size:13px}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ea580c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Absensi">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<script src="config.js"></script>
+<script>
+if (window.KONFIG && KONFIG.ONESIGNAL_APP_ID) {
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(function (OneSignal) { return OneSignal.init({ appId: KONFIG.ONESIGNAL_APP_ID }); });
+  var s = document.createElement('script'); s.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'; s.defer = true; document.head.appendChild(s);
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1 id="hWarung">Absensi</h1><div class="sub" id="hTgl">Memuat…</div></div>
+    <div class="clock" id="clock">--.--</div>
+  </header>
+  <div id="demoBar"></div>
+  <main id="view"><div class="card mut">Memuat aplikasi…</div></main>
+</div>
+<div id="busy"></div><div id="toastBox"></div><div id="modalBox"></div>
+
+<script>
+var S = { init:null, user:null, status:null, pilih:null, mode:'pegawai', adm:{ tab:'hari' } };
+var busyN = 0;
+
+// ---------- util ----------
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function titik(t){ return t ? String(t).replace(':','.') : '-'; }
+function ls(k,v){ try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); }catch(e){ return null; } }
+function busy(on){ busyN += on?1:-1; $('busy').innerHTML = busyN>0 ? '<div class="busy"></div>' : ''; }
+function api(name){
+  var args = Array.prototype.slice.call(arguments,1);
+  busy(true);
+  return new Promise(function(res,rej){
+    function ok(v){ busy(false); res(v); } function no(e){ busy(false); rej(e); }
+    if (window.DEMO){ setTimeout(function(){ try{ ok(DEMO.call(name,args)); }catch(e){ no(e); } },120); return; }
+    if (window.KONFIG && KONFIG.API_URL){
+      fetch(KONFIG.API_URL,{method:'POST',body:JSON.stringify({fn:name,args:args})})
+        .then(function(r){ return r.json(); })
+        .then(function(j){ if(j.ok) ok(j.data); else no(new Error(j.error)); })
+        .catch(function(){ no(new Error('Tidak tersambung. Cek sinyal/internet lalu coba lagi.')); });
+      return;
+    }
+    var r = google.script.run.withSuccessHandler(ok).withFailureHandler(no);
+    r[name].apply(r,args);
+  });
+}
+function hpId(){ var h=ls('absensi-hp'); if(!h){ h='hp-'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); ls('absensi-hp',h); } return h; }
+// ---------- notifikasi (hanya versi GitHub Pages) ----------
+var NOTIF = !!(window.KONFIG && KONFIG.ONESIGNAL_APP_ID);
+function os(fn){ if(!NOTIF) return; window.OneSignalDeferred=window.OneSignalDeferred||[]; OneSignalDeferred.push(fn); }
+function notifLogin(id){ os(function(O){ if (O.Notifications.permission) O.login(String(id)).catch(function(){}); }); }
+function notifLogout(){ os(function(O){ try{ O.logout(); }catch(e){} }); }
+function iosBelumDipasang(){ var ua=navigator.userAgent; return /iPhone|iPad|iPod/.test(ua) && !(window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)); }
+function cekNotif(cb){
+  if (!NOTIF) return cb('mati');
+  if (iosBelumDipasang()) return cb('ios');
+  os(function(O){ try{ cb(!O.Notifications.isPushSupported() ? 'tidak' : O.Notifications.permission ? 'aktif' : 'belum'); }catch(e){ cb('tidak'); } });
+}
+function aktifkanNotif(id, selesai){
+  os(function(O){
+    O.Notifications.requestPermission().then(function(){
+      if (!O.Notifications.permission){ toast('Izin notifikasi ditolak. Aktifkan lewat pengaturan browser.',true); return; }
+      return O.login(String(id)).then(function(){ toast('Notifikasi aktif 🔔'); if(selesai) selesai(); });
+    }).catch(gagal);
+  });
+}
+function kartuNotif(el, id){
+  cekNotif(function(st){
+    var box=$(el); if(!box) return;
+    if (st==='aktif'){ notifLogin(id); box.innerHTML=''; return; }
+    if (st==='belum') box.innerHTML='<div class="card" style="border-color:#fdba74"><b>🔔 Aktifkan pengingat</b><p class="mut" style="margin:4px 0 10px">Dapat notifikasi 1 jam sebelum jadwal jaga, dan pengingat kalau lupa absen.</p><button class="btn pri" onclick="aktifkanNotif(\''+id+'\',function(){kartuNotif(\''+el+'\',\''+id+'\')})">Aktifkan notifikasi</button></div>';
+    else if (st==='ios') box.innerHTML='<div class="card"><b>🔔 Pengingat di iPhone</b><p class="mut" style="margin:4px 0 0">Tekan tombol Bagikan (kotak panah) → <b>Tambahkan ke Layar Utama</b>, lalu buka aplikasi dari ikon itu untuk mengaktifkan notifikasi.</p></div>';
+    else box.innerHTML='';
+  });
+}
+
+function toast(msg,err){ var b=$('toastBox'); b.innerHTML='<div class="toast'+(err?' err':'')+'">'+esc(msg)+'</div>'; clearTimeout(toast.t); toast.t=setTimeout(function(){b.innerHTML='';}, err?4500:2600); }
+function gagal(e){ toast((e&&e.message)||String(e),true); }
+function modal(html){ $('modalBox').innerHTML = html ? '<div class="modal" onclick="if(event.target===this)modal()"><div class="sheet">'+html+'</div></div>' : ''; }
+function addDays(s,n){ var p=s.split('-'); var d=new Date(+p[0],+p[1]-1,+p[2]+n); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+var HARI=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'], BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+function tglPendek(s){ var p=s.split('-'); var d=new Date(+p[0],+p[1]-1,+p[2]); return HARI[d.getDay()]+', '+(+p[2])+' '+BLN[d.getMonth()]; }
+function menitKe(t){ var p=String(t).split(':'); return (+p[0])*60+(+p[1]); }
+function jamDari(m){ m=Math.max(0,m); return ('0'+Math.floor(m/60)).slice(-2)+':'+('0'+m%60).slice(-2); }
+function durasi(m){ var j=Math.floor(m/60), x=m%60; return (j?j+'j ':'')+(x||!j? x+'m':''); }
+function sp(n){ return '<div style="height:'+(n||8)+'px"></div>'; }
+function dua(h){ return h; }
+function salin(text){
+  function fb(){ var t=document.createElement('textarea'); t.value=text; document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(t); }
+  try{ if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(fb); else fb(); }catch(e){ fb(); }
+  toast('Tersalin. Tempel di grup WA ✅');
+}
+function tampilTeks(judul,text){
+  S._teks = text;
+  modal('<h3>'+esc(judul)+'</h3><pre class="wa">'+esc(text)+'</pre><div class="grid"><button class="btn pri" onclick="salin(S._teks)">Salin</button><a class="btn ok" style="text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(text)+'">Buka WhatsApp</a></div>'+sp()+'<button class="btn ghost" onclick="modal()">Tutup</button>');
+}
+function tagEntri(e,admin){
+  var t='';
+  if (e.status==='menunggu') t+='<span class="tag t-wait">menunggu</span>';
+  else if (e.status==='ditolak') t+='<span class="tag t-no">ditolak</span>';
+  else if (e.berjalan) t+='<span class="tag t-run">jaga</span>';
+  else if (e.otomatis) t+='<span class="tag t-auto">otomatis</span>';
+  if (admin){
+    if (e.sumber==='susulan' && e.status==='ok') t+='<span class="tag t-wait">susulan</span>';
+    if (e.diubah) t+='<span class="tag t-ed">diubah</span>';
+    if (e.hpLain) t+='<span class="tag t-hp">HP lain</span>';
+  }
+  return t;
+}
+function jamEntri(e){ return titik(e.datang)+' – '+(e.berjalan?'…':titik(e.pulangEff)); }
+function shiftsUntuk(t){ return S.init.shifts.concat(S.init.khusus.filter(function(k){return k.tanggal===t;})).sort(function(a,b){return menitKe(a.mulai)-menitKe(b.mulai);}); }
+function opsiShift(t,pilih){ return shiftsUntuk(t).map(function(s){return '<option value="'+s.id+'"'+(s.id===pilih?' selected':'')+'>'+esc(s.nama)+' ('+titik(s.mulai)+'–'+titik(s.selesai)+')</option>';}).join(''); }
+
+// ---------- jam ----------
+function tick(){ var d=new Date(); $('clock').textContent=('0'+d.getHours()).slice(-2)+'.'+('0'+d.getMinutes()).slice(-2); }
+setInterval(tick,10000); tick();
+
+// ---------- mulai ----------
+function mulai(){
+  if (window.DEMO) $('demoBar').innerHTML='<div class="demo"><b>Mode demo</b>: data hanya tersimpan di HP ini. PIN pegawai: Diza 1111, Bintang 2222, Levi 3333, Aldiva 4444, Shinta 5555. PIN pemilik: 1234. <button class="link" style="color:#fde68a" onclick="DEMO.reset();ls(\'absensi-user\',null);ls(\'absensi-admin\',null);location.reload()">reset demo</button></div>';
+  api('apiInit').then(function(d){
+    S.init=d; $('hWarung').textContent=d.warung; $('hTgl').textContent=d.label.hari+', '+d.label.tanggal;
+    S.user = ls('absensi-user');
+    if (ls('absensi-admin')) { S.adm.pin=ls('absensi-admin'); return bukaAdmin(); }
+    if (S.user) muatStatus(); else viewNama();
+  }).catch(function(e){ $('view').innerHTML='<div class="card">Gagal memuat: '+esc(e.message||e)+'</div>'; });
+}
+function segarkan(){ if (S.mode==='pegawai' && S.user && S.status && !$('modalBox').innerHTML) muatStatus(true); }
+document.addEventListener('visibilitychange',function(){ if(!document.hidden) segarkan(); });
+setInterval(function(){ if(!document.hidden) segarkan(); },60000);
+
+// ---------- PEGAWAI ----------
+function viewNama(){
+  S.mode='pegawai';
+  var h='<div class="card"><h3>Siapa kamu?</h3><p class="mut" style="margin:0 0 12px">Pilih namamu. Cukup sekali, berikutnya HP ini akan mengingatmu.</p><div class="grid">';
+  S.init.pegawai.forEach(function(n){ h+='<button class="btn name" data-n="'+esc(n)+'" onclick="viewPin(this.dataset.n)">'+esc(n)+'</button>'; });
+  if (!S.init.pegawai.length) h+='<p class="mut">Belum ada pegawai. Pemilik bisa menambahkannya di menu Pemilik.</p>';
+  h+='</div></div><div class="foot"><button class="link" onclick="viewAdminLogin()">Masuk sebagai pemilik</button></div>';
+  $('view').innerHTML=h;
+}
+function viewPin(nama){
+  $('view').innerHTML='<div class="card"><h3>Halo, '+esc(nama)+' 👋</h3><p class="mut" style="margin:0">Masukkan PIN kamu.</p>'+
+    '<input id="pin" class="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" onkeyup="if(event.key===\'Enter\')cekPin()">'+
+    sp(12)+'<button class="btn pri" onclick="cekPin()">Lanjut</button>'+sp()+'<button class="btn ghost" onclick="viewNama()">Bukan saya</button></div>';
+  S._nama=nama; setTimeout(function(){ $('pin').focus(); },50);
+}
+function cekPin(){
+  var pin=$('pin').value.trim();
+  api('apiStatusSaya',S._nama,pin).then(function(st){ S.user={nama:st.nama,pin:pin}; ls('absensi-user',S.user); S.status=st; viewHome(); }).catch(gagal);
+}
+function muatStatus(diam){
+  api('apiStatusSaya',S.user.nama,S.user.pin).then(function(st){ S.status=st; viewHome(); })
+  .catch(function(e){ if(!diam) gagal(e); if(/PIN|Nama/.test(e.message||'')){ ls('absensi-user',null); S.user=null; viewNama(); } });
+}
+function keluarPegawai(){ notifLogout(); ls('absensi-user',null); S.user=null; S.status=null; viewNama(); }
+
+function viewHome(){
+  S.mode='pegawai';
+  var st=S.status, h='<div id="notifBox"></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><p class="hello">Halo, '+esc(st.nama)+' 👋</p><button class="link" onclick="keluarPegawai()">ganti</button></div>';
+  if (st.berjalan){
+    var b=st.berjalan;
+    h+='<div class="status run"><b>Sedang jaga shift '+esc(b.shiftNama)+'</b><br><span class="mut">Masuk jam '+titik(b.datang)+'. Shift selesai '+titik(b.selesai)+'.</span></div>'+
+      '<button class="btn no big" onclick="pulang()">ABSEN PULANG</button>'+
+      '<p class="mut" style="margin:10px 2px 0">Lupa absen pulang? Tenang, otomatis tercatat '+titik(b.selesai)+'.'+(b.batasHitung!==b.selesai?' Jam pulang dihitung paling lambat '+titik(b.batasHitung)+'.':'')+'</p>';
+  }
+  if (st.terbuka.length){
+    if (!S.pilih || !st.terbuka.some(function(x){return x.id===S.pilih;})) S.pilih = pilihDefault(st.terbuka, st.now.jam);
+    if (st.berjalan) h+='<div class="hr"></div>';
+    h+='<div class="mut" style="margin-top:8px">'+(st.berjalan?'Absen masuk shift berikutnya:':'Shift:')+'</div><div class="chips">';
+    st.terbuka.forEach(function(x){ h+='<button class="chip'+(x.id===S.pilih?' on':'')+'" onclick="S.pilih=\''+x.id+'\';viewHome()">'+esc(x.nama)+' · '+titik(x.mulai)+'–'+titik(x.selesai)+'</button>'; });
+    h+='</div><button class="btn ok big" onclick="masuk()">ABSEN MASUK</button>';
+  }
+  if (!st.berjalan && !st.terbuka.length){
+    h+='<div class="status">Belum ada shift yang bisa diabsen sekarang.'+(st.berikut?'<br><span class="mut">Shift '+esc(st.berikut.nama)+' ('+titik(st.berikut.mulai)+') bisa diabsen mulai jam '+titik(st.berikut.buka)+'.</span>':'')+'</div>';
+  }
+  h+='</div>';
+  if (st.hariIni.length){
+    h+='<div class="card"><h3>Absenmu hari ini</h3>';
+    st.hariIni.forEach(function(e){ h+='<div class="row"><div><b>'+esc(e.shiftNama)+'</b>'+tagEntri(e)+'</div><div>'+jamEntri(e)+'</div></div>'; });
+    h+='</div>';
+  }
+  if (st.jadwal.length){
+    h+='<div class="card"><h3>Jadwal jagamu</h3>';
+    st.jadwal.forEach(function(j){ h+='<div class="row"><div>'+(j.tanggal===st.now.tanggal?'<b>Hari ini</b>':esc(tglPendek(j.tanggal)))+'<br><span class="mut">'+esc(j.shiftNama)+' · '+titik(j.mulai)+'–'+titik(j.selesai)+'</span></div><button class="btn sm ghost" onclick="viewAjuan(\''+j.tanggal+'\',\''+j.shift+'\')">Izin / tukar</button></div>'; });
+    h+='</div>';
+  }
+  if (st.ajuan.length){
+    h+='<div class="card"><h3>Pengajuanmu</h3>';
+    st.ajuan.forEach(function(a){
+      var tg = a.status==='menunggu'?'<span class="tag t-wait">menunggu</span>':a.status==='disetujui'?'<span class="tag t-run">disetujui</span>':'<span class="tag t-no">ditolak</span>';
+      h+='<div class="row"><div>'+(a.jenis==='izin'?'Izin':'Tukar → '+esc(a.pengganti))+tg+'<br><span class="mut">'+esc(tglPendek(a.tanggal))+' · '+esc(a.shiftNama)+'</span></div>'+(a.status==='menunggu'?'<button class="btn sm ghost" onclick="batalAjuan(\''+a.id+'\')">Batalkan</button>':'')+'</div>';
+    });
+    h+='</div>';
+  }
+  h+='<div class="grid"><button class="btn" onclick="viewSusulan()">Lupa absen?<br><small>Absen susulan</small></button><button class="btn" onclick="viewAjuan()">Izin / tukar<br><small>shift</small></button>'+
+    '<button class="btn" onclick="jamKerjaku()">Jam kerjaku<br><small>periode ini</small></button><button class="btn" onclick="lihatHariIni()">Siapa jaga<br><small>hari ini</small></button></div>';
+  h+='<div class="foot"><button class="link" onclick="viewAdminLogin()">Masuk sebagai pemilik</button></div>';
+  $('view').innerHTML=h;
+  kartuNotif('notifBox', st.pegawaiId);
+}
+function pilihDefault(list, jam){
+  var t=menitKe(jam);
+  var dalam=list.filter(function(x){ return t>=menitKe(x.mulai)-60 && t<=menitKe(x.selesai); });
+  return (dalam[0]||list[0]).id;
+}
+function masuk(){ api('apiMasuk',S.user.nama,S.user.pin,S.pilih,hpId()).then(function(st){ S.status=st; viewHome(); toast('Absen masuk tercatat jam '+titik(st.now.jam)+' ✅'); }).catch(gagal); }
+function pulang(){ api('apiPulang',S.user.nama,S.user.pin,hpId()).then(function(st){ S.status=st; viewHome(); toast('Absen pulang tercatat. Terima kasih! 🙏'); }).catch(gagal); }
+
+function lihatHariIni(){
+  api('apiHariIni','').then(function(d){
+    var h='<h3>Yang jaga hari ini</h3><p class="mut" style="margin:0 0 6px">'+esc(d.label.hari+', '+d.label.tanggal)+'</p>';
+    d.shifts.forEach(function(s){
+      h+='<div class="card'+(s.libur?' libur':'')+'" style="margin:8px 0"><b>'+esc(s.nama)+'</b> <span class="mut">'+titik(s.mulai)+'–'+titik(s.selesai)+'</span>'+(s.libur?'<span class="tag t-lib">libur</span>':'');
+      if (s.jadwal.length && !s.libur) h+='<div class="mut">Jadwal: '+esc(s.jadwal.join(', '))+'</div>';
+      if (!s.entri.length && !s.libur) h+='<div class="mut">Belum ada yang absen.</div>';
+      s.entri.forEach(function(e){ h+='<div class="row"><div>'+esc(e.nama)+tagEntri(e)+'</div><div>'+jamEntri(e)+'</div></div>'; });
+      h+='</div>';
+    });
+    modal(h+'<button class="btn ghost" onclick="modal()">Tutup</button>');
+  }).catch(gagal);
+}
+
+function viewSusulan(){
+  var now=S.status.now;
+  modal('<h3>Absen susulan</h3><p class="mut" style="margin:0">Untuk shift yang lupa diabsen. Nanti disetujui pemilik.</p>'+
+    '<label>Tanggal</label><input id="sTgl" type="date" max="'+now.tanggal+'" value="'+now.tanggal+'" onchange="$(\'sShift\').innerHTML=opsiShift(this.value)">'+
+    '<label>Shift</label><select id="sShift">'+opsiShift(now.tanggal)+'</select>'+
+    '<div class="grid"><div><label>Jam datang</label><input id="sDat" type="time"></div><div><label>Jam pulang</label><input id="sPul" type="time"></div></div>'+
+    '<div class="mut" style="margin-top:4px">Jam pulang boleh dikosongkan, nanti otomatis jam akhir shift.</div>'+
+    '<label>Alasan singkat</label><input id="sAl" placeholder="mis. HP mati / lupa">'+
+    sp(14)+'<button class="btn pri" onclick="kirimSusulan()">Kirim</button>'+sp()+'<button class="btn ghost" onclick="modal()">Batal</button>');
+}
+function kirimSusulan(){
+  var d={tanggal:$('sTgl').value,shift:$('sShift').value,datang:$('sDat').value,pulang:$('sPul').value,alasan:$('sAl').value};
+  api('apiSusulan',S.user.nama,S.user.pin,d,hpId()).then(function(r){ modal(); toast(r.pesan); muatStatus(true); }).catch(gagal);
+}
+
+function viewAjuan(tgl,shift){
+  var now=S.status.now; tgl=tgl||now.tanggal; S._jenis='izin';
+  var teman=S.init.pegawai.filter(function(n){return n!==S.status.nama;}).map(function(n){return '<option>'+esc(n)+'</option>';}).join('');
+  modal('<h3>Izin / tukar shift</h3><p class="mut" style="margin:0">Pengajuan dikirim ke pemilik. Kalau disetujui, jadwal otomatis berubah.</p>'+
+    '<div class="chips" style="margin-top:10px"><button id="jIzin" class="chip on" onclick="pilihJenis(\'izin\')">Izin tidak masuk</button><button id="jTukar" class="chip" onclick="pilihJenis(\'tukar\')">Digantikan teman</button></div>'+
+    '<div class="grid"><div><label>Tanggal</label><input id="aTgl" type="date" min="'+now.tanggal+'" value="'+tgl+'" onchange="$(\'aShift\').innerHTML=opsiShift(this.value)"></div><div><label>Shift</label><select id="aShift">'+opsiShift(tgl,shift)+'</select></div></div>'+
+    '<div id="aPengWrap" style="display:none"><label>Digantikan oleh</label><select id="aPeng"><option value="">— pilih teman —</option>'+teman+'</select><div class="mut" style="margin-top:4px">Pastikan temanmu sudah setuju dulu ya.</div></div>'+
+    '<label>Alasan singkat</label><input id="aAl" placeholder="mis. ada kuliah pengganti">'+
+    sp(14)+'<button class="btn pri" onclick="kirimAjuan()">Kirim pengajuan</button>'+sp()+'<button class="btn ghost" onclick="modal()">Batal</button>');
+}
+function pilihJenis(j){ S._jenis=j; $('jIzin').className='chip'+(j==='izin'?' on':''); $('jTukar').className='chip'+(j==='tukar'?' on':''); $('aPengWrap').style.display=j==='tukar'?'block':'none'; }
+function kirimAjuan(){
+  var d={jenis:S._jenis,tanggal:$('aTgl').value,shift:$('aShift').value,pengganti:$('aPeng').value,alasan:$('aAl').value};
+  api('apiAjukan',S.user.nama,S.user.pin,d).then(function(r){ modal(); toast(r.pesan); muatStatus(true); }).catch(gagal);
+}
+function batalAjuan(id){ api('apiBatalAjuan',S.user.nama,S.user.pin,id).then(function(){ toast('Pengajuan dibatalkan'); muatStatus(true); }).catch(gagal); }
+
+function jamKerjaku(){
+  api('apiRekapSaya',S.user.nama,S.user.pin).then(function(r){
+    var h='<h3>Jam kerjamu</h3><p class="mut" style="margin:0 0 10px">Periode berjalan: '+esc(tglPendek(r.dari))+' – '+esc(tglPendek(r.sampai))+'</p>'+
+      '<div class="grid" style="margin-bottom:10px"><div class="status" style="margin:0;text-align:center"><div class="mut">Total jam</div><div style="font-size:22px;font-weight:800">'+esc(r.durasi)+'</div></div>'+
+      '<div class="status" style="margin:0;text-align:center"><div class="mut">Jumlah shift</div><div style="font-size:22px;font-weight:800">'+r.shift+'</div></div></div>';
+    if (r.otomatis) h+='<p class="mut" style="margin:0 0 6px">'+r.otomatis+'× lupa absen pulang (tercatat jam akhir shift).</p>';
+    if (r.pending) h+='<p class="mut" style="margin:0 0 6px">'+r.pending+' absen susulan masih menunggu persetujuan (belum dihitung).</p>';
+    h+='<details><summary>Rincian ('+r.detail.length+')</summary>';
+    r.detail.forEach(function(d){ h+='<div class="row"><div>'+esc(tglPendek(d.tanggal))+' · '+esc(d.shiftNama)+tagEntri(d)+'</div><div style="text-align:right">'+jamEntri(d)+'<br><span class="mut">'+durasi(d.menit)+'</span></div></div>'; });
+    h+='</details>';
+    if (r.lalu.length){ h+='<div class="hr"></div><b>Periode sebelumnya</b>'; r.lalu.forEach(function(p){ h+='<div class="row"><div>'+esc(tglPendek(p.dari))+' – '+esc(tglPendek(p.sampai))+'</div><div><b>'+esc(p.durasi)+'</b> <span class="mut">('+p.shift+' shift)</span></div></div>'; }); }
+    modal(h+sp(12)+'<button class="btn ghost" onclick="modal()">Tutup</button>');
+  }).catch(gagal);
+}
+
+// ---------- PEMILIK ----------
+function viewAdminLogin(){
+  $('view').innerHTML='<div class="card"><h3>Masuk sebagai pemilik</h3><p class="mut" style="margin:0">Masukkan PIN pemilik.</p>'+
+    '<input id="apin" class="pin" type="password" inputmode="numeric" maxlength="8" onkeyup="if(event.key===\'Enter\')loginAdmin()">'+
+    sp(12)+'<button class="btn pri" onclick="loginAdmin()">Masuk</button>'+sp()+'<button class="btn ghost" onclick="kembaliPegawai()">Kembali</button></div>';
+  setTimeout(function(){ $('apin').focus(); },50);
+}
+function kembaliPegawai(){ S.mode='pegawai'; if (S.user) muatStatus(); else viewNama(); }
+function loginAdmin(){ S.adm.pin=$('apin').value.trim(); bukaAdmin(); }
+function bukaAdmin(){
+  api('apiAdminData',S.adm.pin).then(function(d){ S.mode='admin'; S.adm.data=d; ls('absensi-admin',S.adm.pin); renderAdmin(); })
+  .catch(function(e){ ls('absensi-admin',null); gagal(e); viewAdminLogin(); });
+}
+function keluarAdmin(){ ls('absensi-admin',null);  S.adm={tab:'hari'}; kembaliPegawai(); }
+function refreshAdminData(){ return api('apiAdminData',S.adm.pin).then(function(d){ S.adm.data=d; }); }
+function tab(t){ S.adm.tab=t; renderAdmin(); }
+function renderAdmin(){
+  var d=S.adm.data, p=d.pending.length+d.ajuan.length;
+  var tabs=[['hari','Hari ini'],['setuju','Persetujuan'+(p?'<span class="badge">'+p+'</span>':'')],['rekap','Rekap'],['jadwal','Jadwal'],['pegawai','Pegawai'],['riwayat','Riwayat'],['atur','Pengaturan']];
+  var h='<div class="tabs">'+tabs.map(function(t){return '<button class="'+(S.adm.tab===t[0]?'on':'')+'" onclick="tab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
+  d.alarm.forEach(function(a){ h+='<div class="alarm">⚠️ <b>Shift '+esc(a.nama)+'</b> sudah mulai '+titik(a.mulai)+' tapi '+(a.terisi?'baru '+a.terisi+' orang yang absen.':'belum ada yang absen.')+'</div>'; });
+  h+='<div id="aview"></div><div class="foot"><button class="link" onclick="keluarAdmin()">Keluar dari mode pemilik</button></div>';
+  $('view').innerHTML=h;
+  ({hari:aHari,setuju:aSetuju,rekap:aRekap,jadwal:aJadwal,pegawai:aPegawai,riwayat:aRiwayat,atur:aAtur})[S.adm.tab]();
+}
+
+// --- Hari ini ---
+function aHari(){
+  var tgl=S.adm.tgl||S.adm.data.now.tanggal; S.adm.tgl=tgl;
+  api('apiHariIni',tgl).then(function(d){
+    S.adm.hari=d;
+    var h='<div class="nav"><button class="btn sm ghost" onclick="S.adm.tgl=addDays(S.adm.tgl,-1);aHari()">◀</button><div class="t">'+esc(d.label.hari+', '+d.label.tanggal)+'</div><button class="btn sm ghost" onclick="S.adm.tgl=addDays(S.adm.tgl,1);aHari()">▶</button></div>';
+    if (d.kunci) h+='<div class="status" style="margin-top:0">🔒 Tanggal ini sudah tutup buku. Data tidak bisa diubah.</div>';
+    h+='<div class="grid" style="margin-bottom:12px"><button class="btn pri" onclick="laporanWA()">📤 Laporan ke WA</button><button class="btn" onclick="jadwalBesokWA()">📋 Jadwal besok ke WA</button></div>';
+    d.shifts.forEach(function(s){
+      var cls=s.libur?' libur':s.peringatan?' '+s.peringatan.level:'';
+      var tg=s.libur?'<span class="tag t-lib">libur</span>':'<span class="tag '+(s.terisi>=2?'t-run':s.peringatan&&s.peringatan.level==='kosong'?'t-no':'t-auto')+'">'+s.terisi+'/2</span>';
+      h+='<div class="card'+cls+'"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">'+esc(s.nama)+' <span class="mut">'+titik(s.mulai)+'–'+titik(s.selesai)+'</span>'+(s.khusus?'<span class="tag t-kh">khusus</span>':'')+'</h3>'+tg+'</div>';
+      if (s.peringatan && !s.libur) h+='<div style="color:#b91c1c;font-size:13px;font-weight:600">'+(s.peringatan.level==='kosong'?'Belum ada yang absen':'Baru '+s.terisi+' orang yang absen')+'</div>';
+      if (s.jadwal.length && !s.libur) h+='<div class="mut">Jadwal: '+esc(s.jadwal.join(', '))+'</div>';
+      s.entri.forEach(function(e){ h+='<div class="row tap" onclick="editAbsen(\''+e.id+'\')"><div><b>'+esc(e.nama)+'</b>'+tagEntri(e,true)+'</div><div>'+jamEntri(e)+' ✎</div></div>'; });
+      if (!d.kunci) h+='<div style="margin-top:6px"><button class="btn sm ghost" onclick="editAbsen(null,\''+s.id+'\')">+ Tambah manual</button></div>';
+      h+='</div>';
+    });
+    h+='<p class="mut">Ketuk nama untuk mengubah. Label: <span class="tag t-auto">otomatis</span> lupa absen pulang · <span class="tag t-ed">diubah</span> sudah diubah pemilik · <span class="tag t-hp">HP lain</span> absen dari HP yang berbeda dari biasanya.</p>';
+    $('aview').innerHTML=h;
+  }).catch(gagal);
+}
+function laporanWA(){ api('apiLaporanWA',S.adm.tgl).then(function(t){ tampilTeks('Laporan absensi',t); }).catch(gagal); }
+function jadwalBesokWA(){ api('apiJadwalWA',addDays(S.adm.data.now.tanggal,1)).then(function(t){ tampilTeks('Jadwal besok',t); }).catch(gagal); }
+function semuaEntri(){ var a=[]; if(S.adm.hari) S.adm.hari.shifts.forEach(function(s){ a=a.concat(s.entri); }); return a.concat(S.adm.data.pending); }
+function editAbsen(id,shiftId){
+  var e = id ? semuaEntri().filter(function(x){return x.id===id;})[0] : null;
+  e = e || {tanggal:S.adm.tgl||S.adm.data.now.tanggal, shift:shiftId, nama:'', datang:'', pulang:'', status:'ok'};
+  S._edit=e;
+  var namaOpt='<option value="">— pilih —</option>'+S.adm.data.pegawai.map(function(p){return '<option'+(p.nama===e.nama?' selected':'')+'>'+esc(p.nama)+'</option>';}).join('');
+  if (e.nama && !S.adm.data.pegawai.some(function(p){return p.nama===e.nama;})) namaOpt+='<option selected>'+esc(e.nama)+'</option>';
+  var stOpt=[['ok','Sah'],['menunggu','Menunggu'],['ditolak','Ditolak']].map(function(x){return '<option value="'+x[0]+'"'+(x[0]===e.status?' selected':'')+'>'+x[1]+'</option>';}).join('');
+  modal('<h3>'+(e.id?'Ubah absen':'Tambah absen')+'</h3>'+(e.alasan?'<div class="mut">Alasan: '+esc(e.alasan)+'</div>':'')+(e.diubah?'<div class="mut">Terakhir diubah: '+esc(e.diubah)+'</div>':'')+
+    '<div class="grid"><div><label>Tanggal</label><input id="eTgl" type="date" value="'+e.tanggal+'" onchange="$(\'eSh\').innerHTML=opsiShift(this.value,$(\'eSh\').value)"></div><div><label>Shift</label><select id="eSh">'+opsiShift(e.tanggal,e.shift)+'</select></div></div>'+
+    '<label>Nama</label><select id="eNm">'+namaOpt+'</select>'+
+    '<div class="grid"><div><label>Datang</label><input id="eDat" type="time" value="'+(e.datang||'')+'"></div><div><label>Pulang</label><input id="ePul" type="time" value="'+(e.pulang||'')+'"></div></div>'+
+    '<div class="mut" style="margin-top:4px">Pulang kosong = otomatis jam akhir shift. Lewat batas tambahan shift tetap dihitung sampai batas itu.</div>'+
+    '<label>Status</label><select id="eSt">'+stOpt+'</select>'+
+    sp(14)+'<button class="btn pri" onclick="simpanAbsen()">Simpan</button>'+
+    (e.id?sp()+'<button class="btn ghost" style="color:var(--no)" onclick="hapusAbsen(this)">Hapus</button>':'')+
+    sp()+'<button class="btn ghost" onclick="modal()">Batal</button>');
+}
+function simpanAbsen(){
+  var r={id:S._edit.id,tanggal:$('eTgl').value,shift:$('eSh').value,nama:$('eNm').value,datang:$('eDat').value,pulang:$('ePul').value,status:$('eSt').value};
+  api('apiAdminSimpanAbsen',S.adm.pin,r).then(function(){ modal(); toast('Tersimpan ✅'); return refreshAdminData(); }).then(renderAdmin).catch(gagal);
+}
+function hapusAbsen(b){
+  if (!b.dataset.y){ b.dataset.y=1; b.textContent='Ketuk lagi untuk yakin hapus'; return; }
+  api('apiAdminHapusAbsen',S.adm.pin,S._edit.id).then(function(){ modal(); toast('Dihapus'); return refreshAdminData(); }).then(renderAdmin).catch(gagal);
+}
+
+// --- Persetujuan ---
+function aSetuju(){
+  var d=S.adm.data, h='';
+  h+='<h3 style="margin:4px 2px 8px">Izin & tukar shift</h3>';
+  if (!d.ajuan.length) h+='<div class="card mut">Tidak ada pengajuan yang menunggu.</div>';
+  d.ajuan.forEach(function(a){
+    h+='<div class="card"><div style="display:flex;justify-content:space-between"><b>'+esc(a.nama)+'</b><span class="mut">'+esc(tglPendek(a.tanggal))+'</span></div>'+
+      '<div>'+(a.jenis==='izin'?'Izin tidak masuk':'Digantikan oleh <b>'+esc(a.pengganti)+'</b>')+' · '+esc(a.shiftNama)+' '+titik(a.mulai)+'</div>'+
+      '<div class="mut">Alasan: '+esc(a.alasan||'-')+'</div>'+sp(10)+
+      '<div style="display:flex;gap:8px"><button class="btn ok sm" onclick="putuskan(\''+a.id+'\',true)">✓ Setujui</button><button class="btn no sm" onclick="putuskan(\''+a.id+'\',false)">✕ Tolak</button></div>'+
+      (a.jenis==='izin'?'<div class="mut" style="margin-top:6px">Kalau disetujui, namanya dihapus dari jadwal. Cari pengganti lewat menu Jadwal.</div>':'')+'</div>';
+  });
+  h+='<h3 style="margin:16px 2px 8px">Absen susulan</h3>';
+  if (!d.pending.length) h+='<div class="card mut">Tidak ada absen susulan yang menunggu. 👍</div>';
+  d.pending.forEach(function(e){
+    h+='<div class="card"><div style="display:flex;justify-content:space-between"><b>'+esc(e.nama)+tagEntri({hpLain:e.hpLain},true)+'</b><span class="mut">'+esc(tglPendek(e.tanggal))+'</span></div>'+
+      '<div>'+esc(e.shiftNama)+' · '+titik(e.datang)+' – '+titik(e.pulangEff)+(e.pulang?'':' <span class="tag t-auto">otomatis</span>')+' <span class="mut">('+durasi(e.menit)+')</span></div>'+
+      '<div class="mut">Alasan: '+esc(e.alasan||'-')+'</div>'+sp(10)+
+      '<div style="display:flex;gap:8px"><button class="btn ok sm" onclick="setujui(\''+e.id+'\',true)">✓ Setujui</button><button class="btn no sm" onclick="setujui(\''+e.id+'\',false)">✕ Tolak</button><button class="btn ghost sm" onclick="editAbsen(\''+e.id+'\')">Ubah</button></div></div>';
+  });
+  $('aview').innerHTML=h;
+}
+function setujui(id,y){ api('apiAdminSetujui',S.adm.pin,id,y).then(function(d){ S.adm.data=d; renderAdmin(); toast(y?'Disetujui ✅':'Ditolak'); }).catch(gagal); }
+function putuskan(id,y){ api('apiAdminPutuskanAjuan',S.adm.pin,id,y).then(function(d){ S.adm.data=d; renderAdmin(); toast(y?'Disetujui, jadwal diperbarui ✅':'Ditolak'); }).catch(gagal); }
+
+// --- Rekap ---
+function aRekap(){
+  var d=S.adm.data, per=S.adm.periode||{dari:d.periodeMulai, sampai:d.now.tanggal};
+  var h='<div class="card"><h3>Periode gajian</h3><div class="grid"><div><label>Dari</label><input id="rD" type="date" value="'+per.dari+'"></div><div><label>Sampai</label><input id="rS" type="date" value="'+per.sampai+'"></div></div>'+
+    sp(12)+'<button class="btn pri" onclick="hitungRekap()">Tampilkan rekap</button></div><div id="rOut"></div>';
+  if (d.periode.length){
+    h+='<div class="card"><h3>Periode yang sudah tutup buku 🔒</h3>';
+    d.periode.forEach(function(p){ h+='<div class="row"><div>'+esc(tglPendek(p.dari))+' – '+esc(tglPendek(p.sampai))+'<br><span class="mut">ditutup '+esc(p.ditutup)+'</span></div><div style="display:flex;gap:6px"><button class="btn sm ghost" onclick="lihatPeriode(\''+p.dari+'\',\''+p.sampai+'\')">Lihat</button><button class="btn sm ghost" onclick="bukaBuku(this,\''+p.id+'\')">Buka kunci</button></div></div>'; });
+    h+='</div>';
+  }
+  $('aview').innerHTML=h;
+  if (S.adm.rekap) tampilRekap(S.adm.rekap);
+}
+function lihatPeriode(a,b){ $('rD').value=a; $('rS').value=b; hitungRekap(); }
+function hitungRekap(){
+  var dari=$('rD').value, sampai=$('rS').value; S.adm.periode={dari:dari,sampai:sampai};
+  api('apiAdminRekap',S.adm.pin,dari,sampai).then(function(r){ S.adm.rekap=r; tampilRekap(r); }).catch(gagal);
+}
+function tampilRekap(r){
+  var h='<div class="card"><h3>Jam kerja '+esc(tglPendek(r.dari))+' – '+esc(tglPendek(r.sampai))+(r.tutup?' 🔒':'')+'</h3>';
+  if (r.pending) h+='<div class="status" style="margin-top:0">⚠️ Ada '+r.pending+' absen susulan yang belum diputuskan di periode ini (belum dihitung).</div>';
+  h+='<table><tr><th>Nama</th><th class="r">Shift</th><th class="r">Jam kerja</th></tr>';
+  r.ringkas.forEach(function(x){ var k=[]; if(x.otomatis) k.push(x.otomatis+'× lupa absen pulang'); if(x.hpLain) k.push(x.hpLain+'× HP lain');
+    h+='<tr><td><b>'+esc(x.nama)+'</b>'+(k.length?'<div class="mut" style="font-size:11.5px">'+k.join(' · ')+'</div>':'')+'</td><td class="r">'+x.shift+'</td><td class="r"><b>'+esc(x.durasi)+'</b><div class="mut" style="font-size:11.5px">'+x.jamDesimal+' jam</div></td></tr>'; });
+  if (!r.ringkas.length) h+='<tr><td colspan="3" class="mut">Belum ada data.</td></tr>';
+  h+='</table>'+sp(12)+'<div class="grid"><button class="btn" onclick="salinRekap()">Salin rekap</button><button class="btn" onclick="simpanRekapSheet()">Simpan ke Sheet</button></div>';
+  if (r.tutup) h+='<p class="mut" style="margin:10px 0 0">🔒 Periode ini sudah tutup buku ('+esc(r.tutup.ditutup)+'). Absen di dalamnya tidak bisa diubah.</p>';
+  else if (r.bisaTutup) h+=sp(10)+'<button class="btn pri" onclick="tutupBuku(this)">🔒 Tutup buku periode ini</button><p class="mut" style="margin:6px 0 0">Setelah ditutup, absen di periode ini tidak bisa diubah, termasuk lewat absen susulan.</p>';
+  else h+='<p class="mut" style="margin:10px 0 0">Tutup buku bisa dilakukan kalau '+(r.tumpang?'periodenya tidak bertumpuk dengan periode yang sudah ditutup.':r.pending?'semua absen susulan di periode ini sudah diputuskan.':'tanggal akhir periode sebelum hari ini.')+'</p>';
+  h+='</div>';
+  if (r.kosong.length){
+    h+='<div class="card"><details><summary>Shift kurang orang ('+r.kosong.length+')</summary>';
+    r.kosong.forEach(function(k){ h+='<div class="row"><div>'+esc(tglPendek(k.tanggal))+' · '+esc(k.shift)+'</div><div class="tag t-auto">'+k.terisi+'/2</div></div>'; });
+    h+='</details></div>';
+  }
+  h+='<div class="card"><details><summary>Rincian per absen ('+r.detail.length+')</summary>';
+  r.detail.forEach(function(d){ h+='<div class="row"><div>'+esc(tglPendek(d.tanggal))+' · '+esc(d.shiftNama)+'<br><b>'+esc(d.nama)+'</b>'+tagEntri(d,true)+'</div><div style="text-align:right">'+jamEntri(d)+'<br><span class="mut">'+durasi(d.menit)+'</span></div></div>'; });
+  h+='</details></div>';
+  $('rOut').innerHTML=h;
+}
+function salinRekap(){
+  var r=S.adm.rekap, L=['*Rekap Jam Kerja '+S.adm.data.warung+'*', tglPendek(r.dari)+' s.d. '+tglPendek(r.sampai),''];
+  r.ringkas.forEach(function(x,i){ L.push((i+1)+'. '+x.nama+': '+x.shift+' shift, '+x.durasi+' ('+x.jamDesimal+' jam)'); });
+  salin(L.join('\n'));
+}
+function simpanRekapSheet(){ var r=S.adm.rekap; api('apiAdminTulisRekap',S.adm.pin,r.dari,r.sampai).then(function(x){ toast(x.pesan,!x.ok); }).catch(gagal); }
+function tutupBuku(b){
+  if (!b.dataset.y){ b.dataset.y=1; b.textContent='Ketuk lagi untuk yakin tutup buku'; return; }
+  var r=S.adm.rekap;
+  api('apiAdminTutupBuku',S.adm.pin,r.dari,r.sampai).then(function(x){ S.adm.rekap=x; toast('Periode ditutup 🔒'); return refreshAdminData(); }).then(renderAdmin).catch(gagal);
+}
+function bukaBuku(b,id){
+  if (!b.dataset.y){ b.dataset.y=1; b.textContent='Yakin?'; return; }
+  api('apiAdminBukaBuku',S.adm.pin,id).then(function(d){ S.adm.data=d; S.adm.rekap=null; toast('Kunci periode dibuka'); renderAdmin(); }).catch(gagal);
+}
+
+// --- Jadwal ---
+function senin(t){ var p=t.split('-'); var d=new Date(+p[0],+p[1]-1,+p[2]); var g=(d.getDay()+6)%7; return addDays(t,-g); }
+function aJadwal(){
+  S.adm.jMulai=S.adm.jMulai||senin(S.adm.data.now.tanggal);
+  api('apiJadwal',S.adm.jMulai).then(function(j){ S.adm.jad=j; renderJadwal(j); }).catch(gagal);
+}
+function renderJadwal(j){
+  var peg=S.adm.data.pegawai.filter(function(p){return p.aktif;}).map(function(p){return p.nama;});
+  function sel(id,v,dis){ var o='<option value="">–</option>'+peg.map(function(n){return '<option'+(n===v?' selected':'')+'>'+esc(n)+'</option>';}).join(''); if(v&&peg.indexOf(v)<0) o+='<option selected>'+esc(v)+'</option>'; return '<select id="'+id+'"'+(dis?' disabled':'')+'>'+o+'</select>'; }
+  var h='<div class="nav"><button class="btn sm ghost" onclick="S.adm.jMulai=addDays(S.adm.jMulai,-7);aJadwal()">◀</button><div class="t">'+esc(tglPendek(j.mulai))+' – '+esc(tglPendek(addDays(j.mulai,6)))+'</div><button class="btn sm ghost" onclick="S.adm.jMulai=addDays(S.adm.jMulai,7);aJadwal()">▶</button></div>';
+  h+='<div class="grid" style="margin-bottom:12px"><button class="btn" onclick="salinMingguLalu()">Salin minggu lalu</button><button class="btn pri" onclick="simpanJadwal()">Simpan jadwal</button></div>';
+  j.hari.forEach(function(d,i){
+    var semuaLibur=d.slot.length && d.slot.every(function(s){return s.libur;});
+    h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:6px"><b>'+esc(tglPendek(d.tanggal))+'</b><div style="display:flex;gap:6px"><button class="btn sm ghost" onclick="tutupSeharian('+i+')">'+(semuaLibur?'Buka':'Tutup seharian')+'</button><button class="btn sm ghost" onclick="kirimJadwalHari(\''+d.tanggal+'\')">Kirim WA</button></div></div>';
+    d.slot.forEach(function(s,k){
+      h+='<div class="jrow"><div>'+esc(s.shiftNama)+(s.khusus?'<br><span class="mut" style="font-size:10.5px">'+titik(s.mulai)+'–'+titik(s.selesai)+' <a href="#" onclick="hapusKhusus(event,\''+s.shift+'\')" style="color:var(--no)">hapus</a></span>':'')+'</div>'+
+        sel('j'+i+'_'+k+'_1',s.nama1,s.libur)+sel('j'+i+'_'+k+'_2',s.nama2,s.libur)+
+        '<label class="lb" style="margin:0"><input type="checkbox" class="sw" id="j'+i+'_'+k+'_L"'+(s.libur?' checked':'')+' onchange="toggleLibur('+i+','+k+')">libur</label></div>';
+    });
+    h+='<button class="btn sm ghost" style="margin-top:4px" onclick="formKhusus(\''+d.tanggal+'\')">+ Shift khusus (pesanan)</button></div>';
+  });
+  $('aview').innerHTML=h;
+}
+function toggleLibur(i,k){ var on=$('j'+i+'_'+k+'_L').checked; $('j'+i+'_'+k+'_1').disabled=on; $('j'+i+'_'+k+'_2').disabled=on; }
+function tutupSeharian(i){
+  var d=S.adm.jad.hari[i], semua=d.slot.every(function(s,k){return $('j'+i+'_'+k+'_L').checked;});
+  d.slot.forEach(function(s,k){ $('j'+i+'_'+k+'_L').checked=!semua; toggleLibur(i,k); });
+  toast(semua?'Libur dibatalkan. Jangan lupa Simpan.':'Ditandai tutup seharian. Jangan lupa Simpan.');
+}
+function bacaJadwal(){
+  var out=[]; S.adm.jad.hari.forEach(function(d,i){ d.slot.forEach(function(s,k){ out.push({tanggal:d.tanggal,shift:s.shift,nama1:$('j'+i+'_'+k+'_1').value,nama2:$('j'+i+'_'+k+'_2').value,libur:$('j'+i+'_'+k+'_L').checked}); }); }); return out;
+}
+function simpanJadwal(diam){ return api('apiAdminSimpanJadwal',S.adm.pin,bacaJadwal()).then(function(){ if(!diam) toast('Jadwal tersimpan ✅'); return refreshAdminData(); }).then(function(){ if(!diam) renderAdmin(); }).catch(function(e){ gagal(e); throw e; }); }
+function salinMingguLalu(){
+  api('apiJadwal',addDays(S.adm.jMulai,-7)).then(function(l){
+    l.hari.forEach(function(d,i){ d.slot.forEach(function(s,k){ var cur=S.adm.jad.hari[i].slot.map(function(x){return x.shift;}).indexOf(s.shift); if(cur<0) return; var a=$('j'+i+'_'+cur+'_1'), b=$('j'+i+'_'+cur+'_2'); a.value=s.nama1; b.value=s.nama2; }); });
+    toast('Disalin dari minggu lalu. Jangan lupa Simpan.');
+  }).catch(gagal);
+}
+function kirimJadwalHari(t){ simpanJadwal(true).then(function(){ return api('apiJadwalWA',t); }).then(function(x){ tampilTeks('Jadwal jaga',x); }).catch(function(){}); }
+function formKhusus(t){
+  modal('<h3>Shift khusus</h3><p class="mut" style="margin:0">Untuk pesanan atau kerja di luar jam shift biasa, hanya berlaku di '+esc(tglPendek(t))+'.</p>'+
+    '<label>Nama</label><input id="kNm" value="Pesanan">'+
+    '<div class="grid"><div><label>Mulai</label><input id="kM" type="time"></div><div><label>Selesai</label><input id="kS" type="time"></div></div>'+
+    '<div class="grid"><div><label>Tambahan sebelum (menit)</label><input id="kTM" type="number" min="0" value="0"></div><div><label>Tambahan sesudah (menit)</label><input id="kTP" type="number" min="0" value="30"></div></div>'+
+    sp(14)+'<button class="btn pri" onclick="simpanKhusus(\''+t+'\')">Tambah</button>'+sp()+'<button class="btn ghost" onclick="modal()">Batal</button>');
+}
+function simpanKhusus(t){
+  var d={tanggal:t,nama:$('kNm').value,mulai:$('kM').value,selesai:$('kS').value,tambahMasuk:$('kTM').value,tambahPulang:$('kTP').value};
+  simpanJadwal(true).then(function(){ return api('apiAdminTambahShiftKhusus',S.adm.pin,d); }).then(function(){ modal(); toast('Shift khusus ditambahkan ✅'); return api('apiInit'); }).then(function(i){ S.init=i; aJadwal(); }).catch(gagal);
+}
+function hapusKhusus(ev,id){
+  ev.preventDefault();
+  if (S._hapusK!==id){ S._hapusK=id; toast('Ketuk "hapus" sekali lagi untuk menghapus shift khusus ini.'); return; }
+  S._hapusK=null;
+  api('apiAdminHapusShiftKhusus',S.adm.pin,id).then(function(){ toast('Shift khusus dihapus'); return api('apiInit'); }).then(function(i){ S.init=i; aJadwal(); }).catch(gagal);
+}
+
+// --- Pegawai ---
+function aPegawai(){
+  S.adm.peg=S.adm.data.pegawai.map(function(p){return {id:p.id,nama:p.nama,pin:p.pin,aktif:p.aktif,hp:p.hp,resetHp:false};});
+  renderPegawai();
+}
+function renderPegawai(){
+  var h='<div class="card"><h3>Daftar pegawai</h3><p class="mut" style="margin:0 0 10px">PIN 4–6 angka, beri tahu ke masing-masing pegawai. Matikan centang "aktif" untuk pegawai yang sudah berhenti (riwayat jamnya tetap tersimpan).</p>'+
+    '<div class="pegrow mut" style="font-size:12px"><div>Nama</div><div>PIN</div><div>Aktif</div></div>';
+  S.adm.peg.forEach(function(p,i){
+    h+='<div class="pegrow"><input value="'+esc(p.nama)+'" oninput="S.adm.peg['+i+'].nama=this.value" placeholder="Nama"><input value="'+esc(p.pin)+'" inputmode="numeric" maxlength="6" oninput="S.adm.peg['+i+'].pin=this.value" placeholder="PIN"><input class="sw" type="checkbox"'+(p.aktif?' checked':'')+' onchange="S.adm.peg['+i+'].aktif=this.checked"></div>';
+    if (p.id) h+='<div class="mut" style="font-size:12px;margin:-2px 0 10px">'+(p.resetHp?'HP akan direset saat disimpan':p.hp?'📱 HP terdaftar · <a href="#" onclick="event.preventDefault();S.adm.peg['+i+'].resetHp=true;renderPegawai()">reset HP</a> (kalau ganti HP)':'📱 HP belum terdaftar (terdaftar otomatis saat absen pertama)')+'</div>';
+  });
+  h+=sp(6)+'<button class="btn ghost" onclick="tambahPeg()">+ Tambah pegawai</button>'+sp()+'<button class="btn pri" onclick="simpanPeg()">Simpan</button></div>';
+  $('aview').innerHTML=h;
+}
+function tambahPeg(){ var pin=String(Math.floor(1000+Math.random()*9000)); S.adm.peg.push({id:'',nama:'',pin:pin,aktif:true}); renderPegawai(); }
+function simpanPeg(){
+  api('apiAdminSimpanPegawai',S.adm.pin,S.adm.peg).then(function(d){ S.adm.data=d; return api('apiInit'); }).then(function(i){ S.init=i; toast('Daftar pegawai tersimpan ✅'); renderAdmin(); }).catch(gagal);
+}
+
+// --- Riwayat ---
+function aRiwayat(){
+  api('apiAdminLog',S.adm.pin).then(function(L){
+    var h='<div class="card"><h3>Catatan perubahan</h3><p class="mut" style="margin:0 0 6px">Semua perubahan oleh pemilik tercatat di sini (juga di sheet "Log").</p>';
+    if (!L.length) h+='<p class="mut">Belum ada catatan.</p>';
+    L.forEach(function(l){ h+='<div class="loge"><span class="mut">'+esc(l.waktu)+'</span><br><b>'+esc(l.aksi)+'</b> — '+esc(l.detail)+'</div>'; });
+    $('aview').innerHTML=h+'</div>';
+  }).catch(gagal);
+}
+
+// --- Pengaturan ---
+function aAtur(){
+  var d=S.adm.data, h='<div class="card"><h3>Warung</h3><label>Nama warung</label><input id="sNama" value="'+esc(d.warung)+'">'+
+    '<label>Tandai shift kosong setelah (menit dari jam mulai)</label><input id="sTK" type="number" min="0" value="'+d.tandaKosong+'"><div class="mut" style="margin-top:4px">Hanya penanda. Pegawai tetap bisa absen masuk setelahnya.</div></div>';
+  h+='<div class="card"><h3>Jam shift</h3><p class="mut" style="margin:0 0 8px"><b>Tambahan sebelum</b>: berapa menit sebelum shift yang ikut dihitung kalau datang lebih awal. <b>Tambahan sesudah</b>: batas lewat jam selesai yang masih dihitung kalau absen pulang telat. Isi 0 kalau tidak ada tambahan.</p>';
+  d.shifts.forEach(function(s,i){
+    h+='<div class="shcard"><label style="margin-top:0">Nama</label><input id="shN'+i+'" value="'+esc(s.nama)+'">'+
+      '<div class="grid"><div><label>Mulai</label><input id="shM'+i+'" type="time" value="'+s.mulai+'"></div><div><label>Selesai</label><input id="shS'+i+'" type="time" value="'+s.selesai+'"></div></div>'+
+      '<div class="grid"><div><label>Tambahan sebelum</label><input id="shTM'+i+'" type="number" min="0" value="'+s.tambahMasuk+'"></div><div><label>Tambahan sesudah</label><input id="shTP'+i+'" type="number" min="0" value="'+s.tambahPulang+'"></div></div></div>';
+  });
+  h+='<p class="mut" style="margin:6px 0 0">Tombol absen masuk muncul 60 menit sebelum shift (atau lebih awal kalau tambahan sebelum lebih dari 60).</p></div>';
+  var n=d.notif||{menitIngat:60,menitBelumMasuk:15,pulang:true};
+  h+='<div class="card"><h3>Notifikasi</h3>'+
+    '<label>Ingatkan pegawai sebelum jadwal jaga (menit)</label><input id="nIng" type="number" min="0" value="'+n.menitIngat+'">'+
+    '<label>Ingatkan kalau belum absen masuk setelah shift mulai (menit)</label><input id="nBel" type="number" min="0" value="'+n.menitBelumMasuk+'">'+
+    '<label style="display:flex;align-items:center;gap:8px"><input id="nPul" class="sw" type="checkbox"'+(n.pulang?' checked':'')+'> Ingatkan absen pulang saat shift selesai</label>'+
+    '<div class="mut">Isi 0 untuk mematikan. Pemilik juga dapat notifikasi saat ada shift kosong, absen susulan, atau pengajuan izin/tukar.</div>'+
+    '<div class="hr"></div><b>Notifikasi pemilik di HP ini</b><div id="notifAdm" class="mut" style="margin-top:6px">Memeriksa…</div></div>';
+  h+='<div class="card"><h3>PIN pemilik</h3><label>PIN baru (kosongkan jika tidak diganti)</label><input id="sPin" type="password" inputmode="numeric" maxlength="8"></div>';
+  h+='<button class="btn pri" onclick="simpanAtur()">Simpan pengaturan</button>';
+  $('aview').innerHTML=h;
+  cekNotif(function(st){
+    var el=$('notifAdm'); if(!el) return;
+    if (st==='mati') el.innerHTML='Notifikasi hanya bisa diaktifkan dari aplikasi versi GitHub Pages (link baru).';
+    else if (st==='ios') el.innerHTML='Di iPhone: Bagikan → Tambahkan ke Layar Utama, lalu buka dari ikon itu.';
+    else if (st==='tidak') el.innerHTML='Browser ini tidak mendukung notifikasi. Coba pakai Chrome.';
+    else if (st==='belum') el.innerHTML='<button class="btn" onclick="aktifkanNotif(\'pemilik\',aAtur)">🔔 Aktifkan notifikasi pemilik</button>';
+    else { notifLogin('pemilik'); el.innerHTML='🔔 Aktif. <button class="btn sm ghost" onclick="tesNotif()">Kirim tes</button>'; }
+  });
+}
+function tesNotif(){ api('apiAdminTesNotif',S.adm.pin).then(function(r){ toast(r.pesan,!r.ok); }).catch(gagal); }
+function simpanAtur(){
+  var d=S.adm.data, sh=d.shifts.map(function(s,i){ return {id:s.id,nama:$('shN'+i).value,mulai:$('shM'+i).value,selesai:$('shS'+i).value,tambahMasuk:$('shTM'+i).value,tambahPulang:$('shTP'+i).value}; });
+  var baru=$('sPin').value.trim();
+  api('apiAdminSimpanPengaturan',S.adm.pin,{namaWarung:$('sNama').value,tandaKosong:$('sTK').value,shifts:sh,pinAdminBaru:baru,notif:{menitIngat:$('nIng').value,menitBelumMasuk:$('nBel').value,pulang:$('nPul').checked}}).then(function(x){
+    if (baru){ S.adm.pin=baru; ls('absensi-admin',baru); }
+    S.adm.data=x; return api('apiInit');
+  }).then(function(i){ S.init=i; $('hWarung').textContent=i.warung; toast('Pengaturan tersimpan ✅'); renderAdmin(); }).catch(gagal);
+}
+
+mulai();
+</script>
+</body>
+</html>
